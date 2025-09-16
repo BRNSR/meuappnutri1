@@ -3,9 +3,7 @@ import { auth } from "../services/firebaseConfig";
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 
-// ✅ setHasProfile é recebido como prop direta
 export default function ProfileDataScreen({ route, navigation, setHasProfile }) { 
-    // userId é recebido via route.params (vindo do Login ou Cadastro)
     const userId = auth.currentUser?.uid;
     const [altura, setAltura] = useState('');
     const [peso, setPeso] = useState('');
@@ -16,7 +14,13 @@ export default function ProfileDataScreen({ route, navigation, setHasProfile }) 
             Alert.alert("Erro", "Por favor, preencha todos os campos.");
             return;
         }
-        // ✅ userId E setHasProfile são passados para a próxima tela VIA route.params
+
+        // Validação adicional para garantir que os valores são numéricos
+        if (isNaN(parseFloat(altura)) || isNaN(parseFloat(peso)) || isNaN(parseInt(idade))) {
+            Alert.alert("Erro", "Por favor, insira valores numéricos válidos.");
+            return;
+        }
+
         navigation.navigate("NivelAtividade", {
             userId: userId,
             altura: altura,

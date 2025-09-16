@@ -1,4 +1,3 @@
-// src/screens/ProgressoScreen.js
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import WeightProgressChart from '../components/WeightProgressChart';
@@ -30,7 +29,6 @@ const styles = StyleSheet.create({
     chartSection: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 20,
         marginBottom: 20,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },

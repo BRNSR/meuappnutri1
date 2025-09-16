@@ -67,7 +67,7 @@ export default function Dashboard({ navigation }) {
         </Text>
         <TouchableOpacity
           style={styles.startButton}
-          onPress={() => navigation.navigate("Registration")}
+          onPress={() => navigation.navigate("ProfileData")}
         >
           <Text style={styles.startButtonText}>Começar Agora</Text>
         </TouchableOpacity>
@@ -116,7 +116,7 @@ export default function Dashboard({ navigation }) {
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statTitle}>IMC</Text>
-            <Text style={styles.statValue}>{imc.toFixed(2)}</Text>
+            <Text style={styles.statValue}>{imc ? imc.toFixed(2) : 'N/A'}</Text>
             <Text style={styles.statLabel}>{imcStatus(imc)}</Text>
           </View>
         </View>
@@ -133,12 +133,12 @@ export default function Dashboard({ navigation }) {
         <View style={styles.statRow}>
           <View style={styles.statBox}>
             <Text style={styles.statTitle}>TMB</Text>
-            <Text style={styles.statValue}>{tmb.toFixed(0)} kcal</Text>
+            <Text style={styles.statValue}>{tmb ? `${tmb.toFixed(0)} kcal` : 'N/A'}</Text>
             <Text style={styles.statLabel}>Taxa Metabólica Basal</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statTitle}>GCD</Text>
-            <Text style={styles.statValue}>{gcd.toFixed(0)} kcal</Text>
+            <Text style={styles.statValue}>{gcd ? `${gcd.toFixed(0)} kcal` : 'N/A'}</Text>
             <Text style={styles.statLabel}>Gasto Calórico Diário</Text>
           </View>
         </View>

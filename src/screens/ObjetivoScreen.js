@@ -2,147 +2,201 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebaseConfig';
+import { Picker } from '@react-native-picker/picker';
 
 const objetivoAjustes = {
-    'perder_peso': 'Perder Peso',
-    'manter_peso': 'Manter Peso',
-    'ganhar_peso': 'Ganhar Peso',
+    'perder_peso': 'Perder Peso',
+    'manter_peso': 'Manter Peso',
+    'ganhar_peso': 'Ganhar Peso',
 };
 
-// Make sure you are receiving the setHasProfile function here
+const pesoMetaSemanal = {
+    '0.5': '0,5 kg/semana',
+    '1.0': '1,0 kg/semana',
+    '0': 'Nenhuma',
+};
+
 export default function ObjetivoScreen({ route, navigation }) {
-    const { userId, altura, peso, idade, sexo, nivelAtividade, setHasProfile } = route.params;
-    const [objetivo, setObjetivo] = useState('');
-    const [metaPeso, setMetaPeso] = useState('');
-    const [loading, setLoading] = useState(false);
+    const { userId, altura, peso, idade, sexo, nivelAtividade, setHasProfile } = route.params;
+    const [objetivo, setObjetivo] = useState('');
+    const [metaPeso, setMetaPeso] = useState('');
+    const [metaSemanal, setMetaSemanal] = useState('0');
+    const [loading, setLoading] = useState(false);
 
-    const atividadeMultiplicadores = {
-        'nao_ativa': 1.2,
-        'levemente_ativa': 1.375,
-        'ativa': 1.55,
-        'muito_ativa': 1.725,
-    };
-    
-    const objetivoCaloricoAjustes = {
-        'perder_peso': -500,
-        'manter_peso': 0,
-        'ganhar_peso': 500,
-    };
+    const atividadeMultiplicadores = {
+        'nao_ativa': 1.2,
+        'levemente_ativa': 1.375,
+        'ativa': 1.55,
+        'muito_ativa': 1.725,
+    };
+    
+    const handleSalvarPerfil = async () => {
+        if (!objetivo || !metaPeso) {
+            Alert.alert("Erro", "Por favor, preencha todos os campos.");
+            return;
+        }
 
-    const handleSalvarPerfil = async () => {
-        if (!objetivo || !metaPeso) {
-            Alert.alert("Erro", "Por favor, preencha todos os campos.");
-            return;
-        }
+        const pesoKg = parseFloat(peso);
+        const metaPesoKg = parseFloat(metaPeso);
+        const idadeInt = parseInt(idade);
+        const alturaCm = parseFloat(altura);
 
-        setLoading(true);
+        // Validação de meta de peso
+        if (objetivo === 'perder_peso' && metaPesoKg >= pesoKg) {
+            Alert.alert("Erro", "Para perder peso, sua meta deve ser menor que o peso atual.");
+            return;
+        }
+        if (objetivo === 'ganhar_peso' && metaPesoKg <= pesoKg) {
+            Alert.alert("Erro", "Para ganhar peso, sua meta deve ser maior que o peso atual.");
+            return;
+        }
 
-        try {
-            if (!userId) {
-                setLoading(false);
-                Alert.alert("Erro de autenticação", "ID de usuário não encontrado. Por favor, faça login novamente.");
-                return;
-            }
-            
-            const pesoKg = parseFloat(peso);
-            const alturaM = parseFloat(altura) / 100;
-            const imc = pesoKg / (alturaM * alturaM);
+        setLoading(true);
 
-            let tmb;
-            if (sexo === 'masculino') {
-                tmb = (13.397 * pesoKg) + (4.799 * parseFloat(altura)) - (5.677 * parseInt(idade)) + 88.362;
-            } else {
-                tmb = (9.247 * pesoKg) + (3.098 * parseFloat(altura)) - (4.330 * parseInt(idade)) + 447.593;
-            }
-            
-            const gcd = tmb * atividadeMultiplicadores[nivelAtividade];
-            const metaCalorica = gcd + objetivoCaloricoAjustes[objetivo];
-            
-            await setDoc(doc(db, "users", userId, "profile", "data"), {
-                altura: parseFloat(altura),
-                peso: pesoKg,
-                idade: parseInt(idade),
-                sexo: sexo,
-                nivelAtividade: nivelAtividade,
-                objetivo: objetivo,
-                metaPeso: parseFloat(metaPeso),
-                imc: imc,
-                tmb: tmb,
-                gcd: gcd,
-                metaCalorica: metaCalorica,
-                dataRegistro: new Date().toISOString()
-            });
+        try {
+            if (!userId) {
+                setLoading(false);
+                Alert.alert("Erro de autenticação", "ID de usuário não encontrado.");
+                return;
+            }
 
-            console.log("Perfil atualizado com sucesso!");
-            setLoading(false);
+            // Usando a fórmula de Mifflin-St Jeor para TMB
+            let tmb;
+            if (sexo === 'masculino') {
+                tmb = (10 * pesoKg) + (6.25 * alturaCm) - (5 * idadeInt) + 5;
+            } else {
+                tmb = (10 * pesoKg) + (6.25 * alturaCm) - (5 * idadeInt) - 161;
+            }
+            
+            const gcd = tmb * atividadeMultiplicadores[nivelAtividade];
+            let metaCalorica = gcd;
 
-            // ✅ THIS IS THE KEY PART
-            // The setHasProfile function, when called, will trigger a re-render
-            // of the entire app, changing the navigator to MainTabs.
-            if (typeof setHasProfile === 'function') {
-                setHasProfile(true); 
-            } else {
-                // If the function is missing, we can navigate back to the dashboard.
-                // This is a fallback, but the first method is preferred.
-                navigation.navigate('Dashboard', { screen: 'DashboardMain' });
-            }
+            // Ajuste da meta calórica com base na meta semanal
+            const caloriasPorKg = 7700;
+            const metaCaloriasSemanal = parseFloat(metaSemanal) * caloriasPorKg;
+            const ajusteDiario = metaCaloriasSemanal / 7;
 
-        } catch (error) {
-            setLoading(false);
-            console.error("Erro ao salvar perfil: ", error);
-            Alert.alert("Erro", "Não foi possível salvar seu perfil: " + error.message);
-        }
-    };
-    
-    if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4CAF50" />
-            </View>
-        );
-    }
-    
-    return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>3/3 - Objetivo</Text>
-            <Text style={styles.sectionTitle}>Seu Objetivo:</Text>
-            <View style={styles.optionsContainer}>
-                {Object.entries(objetivoAjustes).map(([key, value]) => (
-                    <TouchableOpacity
-                        key={key}
-                        style={[styles.option, objetivo === key && styles.selectedOption]}
-                        onPress={() => setObjetivo(key)}
-                    >
-                        <Text style={objetivo === key && styles.selectedOptionText}>{value}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-            
-            <TextInput
-                style={styles.input}
-                placeholder="Meta de Peso (kg)"
-                keyboardType="numeric"
-                value={metaPeso}
-                onChangeText={setMetaPeso}
-            />
+            if (objetivo === 'perder_peso') {
+                metaCalorica = gcd - ajusteDiario;
+            } else if (objetivo === 'ganhar_peso') {
+                metaCalorica = gcd + ajusteDiario;
+            }
 
-            <TouchableOpacity style={styles.button} onPress={handleSalvarPerfil}>
-                <Text style={styles.buttonText}>Finalizar Cadastro</Text>
-            </TouchableOpacity>
-        </ScrollView>
-    );
+            // Limites de segurança para a meta calórica
+            const faixaMinima = 1200; // Mulheres
+            const faixaMinimaHomens = 1500; // Homens
+            const limiteMaximo = 4000;
+
+            if (objetivo === 'perder_peso') {
+                if (sexo === 'masculino' && metaCalorica < faixaMinimaHomens) {
+                    metaCalorica = faixaMinimaHomens;
+                } else if (sexo === 'feminino' && metaCalorica < faixaMinima) {
+                    metaCalorica = faixaMinima;
+                }
+            }
+
+            if (metaCalorica > limiteMaximo) {
+                metaCalorica = limiteMaximo;
+            }
+
+            await setDoc(doc(db, "users", userId, "profile", "data"), {
+                altura: alturaCm,
+                peso: pesoKg,
+                idade: idadeInt,
+                sexo: sexo,
+                nivelAtividade: nivelAtividade,
+                objetivo: objetivo,
+                metaPeso: metaPesoKg,
+                metaSemanal: parseFloat(metaSemanal),
+                imc: pesoKg / ((alturaCm / 100) * (alturaCm / 100)),
+                tmb: tmb,
+                gcd: gcd,
+                metaCalorica: metaCalorica,
+                dataRegistro: new Date().toISOString()
+            });
+
+            console.log("Perfil atualizado com sucesso!");
+            setLoading(false);
+
+            if (typeof setHasProfile === 'function') {
+                setHasProfile(true); 
+            } else {
+                navigation.navigate('Dashboard', { screen: 'DashboardMain' });
+            }
+        } catch (error) {
+            setLoading(false);
+            console.error("Erro ao salvar perfil: ", error);
+            Alert.alert("Erro", "Não foi possível salvar seu perfil: " + error.message);
+        }
+    };
+    
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#4CAF50" />
+            </View>
+        );
+    }
+    
+    return (
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.title}>3/3 - Objetivo</Text>
+            
+            <Text style={styles.sectionTitle}>Seu Objetivo:</Text>
+            <View style={styles.optionsContainer}>
+                {Object.entries(objetivoAjustes).map(([key, value]) => (
+                    <TouchableOpacity
+                        key={key}
+                        style={[styles.option, objetivo === key && styles.selectedOption]}
+                        onPress={() => setObjetivo(key)}
+                    >
+                        <Text style={objetivo === key && styles.selectedOptionText}>{value}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+            
+            <TextInput
+                style={styles.input}
+                placeholder="Meta de Peso (kg)"
+                keyboardType="numeric"
+                value={metaPeso}
+                onChangeText={setMetaPeso}
+            />
+
+            {objetivo !== 'manter_peso' && (
+                <>
+                    <Text style={styles.sectionTitle}>Meta Semanal:</Text>
+                    <View style={styles.optionsContainer}>
+                        {Object.entries(pesoMetaSemanal).map(([key, value]) => (
+                            <TouchableOpacity
+                                key={key}
+                                style={[styles.option, metaSemanal === key && styles.selectedOption]}
+                                onPress={() => setMetaSemanal(key)}
+                            >
+                                <Text style={metaSemanal === key && styles.selectedOptionText}>{value}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </>
+            )}
+
+            <TouchableOpacity style={styles.button} onPress={handleSalvarPerfil}>
+                <Text style={styles.buttonText}>Finalizar Cadastro</Text>
+            </TouchableOpacity>
+        </ScrollView>
+    );
 }
 
 const styles = StyleSheet.create({
-    container: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20, marginBottom: 10, alignSelf: 'flex-start' },
-    input: { width: '100%', height: 50, borderColor: '#ccc', borderWidth: 1, marginBottom: 15, paddingHorizontal: 15, borderRadius: 8 },
-    optionsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 15 },
-    option: { padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, marginRight: 10, marginBottom: 10 },
-    selectedOption: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-    selectedOptionText: { color: 'white' },
-    button: { width: '100%', height: 50, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', borderRadius: 8, marginTop: 20 },
-    buttonText: { color: 'white', fontSize: 18 },
-    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    container: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+    sectionTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20, marginBottom: 10, alignSelf: 'flex-start' },
+    input: { width: '100%', height: 50, borderColor: '#ccc', borderWidth: 1, marginBottom: 15, paddingHorizontal: 15, borderRadius: 8 },
+    optionsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 15 },
+    option: { padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, marginRight: 10, marginBottom: 10 },
+    selectedOption: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
+    selectedOptionText: { color: 'white' },
+    button: { width: '100%', height: 50, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', borderRadius: 8, marginTop: 20 },
+    buttonText: { color: 'white', fontSize: 18 },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

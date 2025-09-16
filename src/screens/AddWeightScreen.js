@@ -1,197 +1,219 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
-import { doc, setDoc, updateDoc, getDoc } from "firebase/firestore";
-import { auth, db } from "../services/firebaseConfig";
-import { format } from "date-fns";
-
-// Funções de cálculo (podem ser movidas para um arquivo de utilidades no futuro)
-const calcularTMB = (perfil) => {
-  const { sexo, peso, altura, idade } = perfil;
-  let tmb;
-
-  if (sexo === "masculino") {
-    tmb = 88.36 + 13.4 * peso + 4.8 * altura - 5.7 * idade;
-  } else {
-    tmb = 447.6 + 9.2 * peso + 3.1 * altura - 4.3 * idade;
-  }
-  return tmb;
-};
-
-const calcularGCD = (perfil) => {
-  const { nivelAtividade } = perfil;
-  const tmb = calcularTMB(perfil);
-  let fatorAtividade = 1.2;
-
-  switch (nivelAtividade) {
-    case "sedentario":
-      fatorAtividade = 1.2;
-      break;
-    case "levemente_ativo":
-      fatorAtividade = 1.375;
-      break;
-    case "moderadamente_ativo":
-      fatorAtividade = 1.55;
-      break;
-    case "altamente_ativo":
-      fatorAtividade = 1.725;
-      break;
-    case "muito_ativo":
-      fatorAtividade = 1.9;
-      break;
-  }
-  return tmb * fatorAtividade;
-};
-
-const calcularMetaCalorica = (perfil) => {
-  const { objetivo } = perfil;
-  const gcd = calcularGCD(perfil);
-  let meta = gcd;
-
-  if (objetivo === "perder_peso") {
-    meta = gcd - 500;
-  } else if (objetivo === "ganhar_peso") {
-    meta = gcd + 500;
-  }
-  return meta;
-};
-
-const calcularIMC = (perfil) => {
-  const { peso, altura } = perfil;
-  const alturaMetros = altura / 100;
-  return peso / (alturaMetros * alturaMetros);
-};
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+    Alert,
+    ActivityIndicator,
+} from 'react-native';
+import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+import { auth, db } from '../services/firebaseConfig';
+import { format } from 'date-fns';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function AddWeightScreen({ navigation }) {
-  const [peso, setPeso] = useState("");
-  const [loading, setLoading] = useState(false);
-  const userId = auth.currentUser?.uid;
+    const [peso, setPeso] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [date, setDate] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // src/screens/AddWeightScreen.js
+    const userId = auth.currentUser?.uid;
 
-const handleSaveWeight = async () => {
-  if (!peso || isNaN(parseFloat(peso))) {
-    Alert.alert("Erro", "Por favor, insira um peso válido.");
-    return;
-  }
+    const handleDateChange = (event, selectedDate) => {
+        const currentDate = selectedDate || date;
+        setShowDatePicker(false);
+        setDate(currentDate);
+    };
 
-  setLoading(true);
-  const pesoValue = parseFloat(peso);
-  const dataString = format(new Date(), "yyyy-MM-dd");
-  const userId = auth.currentUser?.uid;
+    const handleSaveWeight = async () => {
+        if (!userId) {
+            Alert.alert('Erro', 'Usuário não autenticado.');
+            return;
+        }
+        if (!peso || isNaN(parseFloat(peso))) {
+            Alert.alert('Erro', 'Por favor, insira um peso válido.');
+            return;
+        }
 
-  if (!userId) {
-    Alert.alert("Erro", "Usuário não autenticado.");
-    setLoading(false);
-    return;
-  }
+        setLoading(true);
+        try {
+            const pesoValue = parseFloat(peso);
+            const formattedDate = format(date, 'yyyy-MM-dd');
 
-  try {
-    // Salva o novo peso no histórico
-    const weightLogRef = doc(db, "users", userId, "weightHistory", dataString);
-    await setDoc(weightLogRef, {
-      peso: pesoValue,
-      timestamp: new Date(),
-    });
+            // 1. Obter os dados atuais do perfil para recalcular as métricas
+            const perfilRef = doc(db, 'users', userId, 'profile', 'data');
+            const perfilDoc = await getDoc(perfilRef);
+            
+            if (!perfilDoc.exists()) {
+                Alert.alert('Erro', 'Dados do perfil não encontrados. Por favor, complete seu perfil primeiro.');
+                setLoading(false);
+                return;
+            }
+            
+            const perfilData = perfilDoc.data();
+            const { altura, idade, sexo, nivelAtividade, objetivo, metaSemanal } = perfilData;
 
-    // Busca o perfil atual do usuário
-    const perfilRef = doc(db, "users", userId, "profile", "data");
-    const perfilSnap = await getDoc(perfilRef);
+            // 2. Recalcular todas as métricas com o novo peso
+            const alturaM = altura / 100;
+            const imc = pesoValue / (alturaM * alturaM);
 
-    if (perfilSnap.exists()) {
-      const perfilData = perfilSnap.data();
+            // Fórmula de Mifflin-St Jeor para TMB
+            let tmb;
+            if (sexo === 'masculino') {
+                tmb = (10 * pesoValue) + (6.25 * altura) - (5 * idade) + 5;
+            } else {
+                tmb = (10 * pesoValue) + (6.25 * altura) - (5 * idade) - 161;
+            }
 
-      // Recalcula as métricas com o novo peso
-      const novoPerfil = { ...perfilData, peso: pesoValue };
-      const novaTmb = calcularTMB(novoPerfil);
-      const novoGcd = calcularGCD(novoPerfil);
-      const novaMetaCalorica = calcularMetaCalorica(novoPerfil);
-      const novoImc = calcularIMC(novoPerfil);
+            const atividadeMultiplicadores = {
+                'nao_ativa': 1.2,
+                'levemente_ativa': 1.375,
+                'ativa': 1.55,
+                'muito_ativa': 1.725,
+            };
+            const gcd = tmb * atividadeMultiplicadores[nivelAtividade];
 
-      // ✅ ATUALIZAÇÃO REVISADA
-      await updateDoc(perfilRef, {
-        peso: pesoValue,
-        tmb: novaTmb,
-        gcd: novoGcd,
-        metaCalorica: novaMetaCalorica,
-        imc: novoImc,
-      });
+            // Recalcular a meta calórica com o novo GCD
+            let metaCalorica = gcd;
+            const caloriasPorKg = 7700;
+            const metaCaloriasSemanal = metaSemanal * caloriasPorKg;
+            const ajusteDiario = metaCaloriasSemanal / 7;
 
-      Alert.alert("Sucesso", "Peso e métricas atualizados com sucesso!");
-      navigation.navigate("Dashboard", { screen: "DashboardMain" });
-    } else {
-      Alert.alert("Erro", "Perfil do usuário não encontrado.");
-      navigation.navigate("Registration");
-    }
-  } catch (e) {
-    console.error("Erro ao salvar peso: ", e);
-    Alert.alert("Erro", "Não foi possível salvar seu peso. Tente novamente.");
-  } finally {
-    setLoading(false);
-  }
-};
+            if (objetivo === 'perder_peso') {
+                metaCalorica = gcd - ajusteDiario;
+            } else if (objetivo === 'ganhar_peso') {
+                metaCalorica = gcd + ajusteDiario;
+            }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Adicionar Peso</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Digite seu peso em kg"
-        keyboardType="numeric"
-        value={peso}
-        onChangeText={setPeso}
-      />
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleSaveWeight}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Salvar Peso</Text>
-        )}
-      </TouchableOpacity>
-    </View>
-  );
+            // Aplicar limites de segurança
+            const faixaMinima = sexo === 'masculino' ? 1500 : 1200;
+            const limiteMaximo = 4000;
+
+            if (objetivo === 'perder_peso' && metaCalorica < faixaMinima) {
+                metaCalorica = faixaMinima;
+            }
+            if (metaCalorica > limiteMaximo) {
+                metaCalorica = limiteMaximo;
+            }
+            
+            // 3. Adicionar o novo peso ao histórico
+            const historicoPesoCollectionRef = collection(db, 'users', userId, 'weightHistory');
+            await addDoc(historicoPesoCollectionRef, {
+                peso: pesoValue,
+                data: formattedDate,
+                timestamp: new Date().toISOString(),
+            });
+
+            // 4. Atualizar o documento 'profile/data' com todas as métricas recalculadas
+            await updateDoc(perfilRef, {
+                peso: pesoValue,
+                imc: imc,
+                tmb: tmb,
+                gcd: gcd,
+                metaCalorica: metaCalorica,
+                ultimaAtualizacaoPeso: new Date().toISOString(),
+            });
+
+            Alert.alert('Sucesso', 'Peso e metas atualizados!');
+            navigation.goBack();
+
+        } catch (e) {
+            console.error('Erro ao adicionar peso ou atualizar perfil:', e);
+            Alert.alert('Erro', 'Não foi possível registrar o peso. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Registrar Peso</Text>
+
+            <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowDatePicker(true)}>
+                <Text style={styles.datePickerButtonText}>Data: {format(date, 'dd/MM/yyyy')}</Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+                <DateTimePicker
+                    testID="datePicker"
+                    value={date}
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                />
+            )}
+
+            <TextInput
+                style={styles.input}
+                placeholder="Peso (kg)"
+                keyboardType="numeric"
+                value={peso}
+                onChangeText={setPeso}
+            />
+
+            <TouchableOpacity
+                style={styles.button}
+                onPress={handleSaveWeight}
+                disabled={loading}
+            >
+                {loading ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <Text style={styles.buttonText}>Salvar Peso e Atualizar Metas</Text>
+                )}
+            </TouchableOpacity>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#f0f4f7",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  input: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: "#4CAF50",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+    container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: '#f0f4f7',
+        justifyContent: 'center',
+    },
+    title: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 30,
+        textAlign: 'center',
+    },
+    input: {
+        backgroundColor: '#fff',
+        padding: 15,
+        borderRadius: 8,
+        marginBottom: 20,
+        fontSize: 16,
+        borderColor: '#e0e0e0',
+        borderWidth: 1,
+    },
+    datePickerButton: {
+        backgroundColor: '#fff',
+        padding: 15,
+        borderRadius: 8,
+        marginBottom: 20,
+        borderColor: '#e0e0e0',
+        borderWidth: 1,
+        alignItems: 'center',
+    },
+    datePickerButtonText: {
+        fontSize: 16,
+        color: '#555',
+    },
+    button: {
+        backgroundColor: '#4CAF50',
+        padding: 15,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
 });
