@@ -1,23 +1,38 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import WeightProgressChart from '../components/WeightProgressChart';
+import CalorieProgressChart from '../components/CalorieProgressChart';
 
 export default function ProgressoScreen() {
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Progresso de Peso</Text>
+        <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.container}
+        >
+            <Text style={styles.title}>Progresso Geral</Text>
+            
+            <Text style={styles.subtitle}>Progresso de Peso</Text>
             <View style={styles.chartSection}>
                 <WeightProgressChart />
+            </View>
+
+            <Text style={styles.subtitle}>Consumo de Calorias</Text>
+            <View style={styles.chartSection}>
+                <CalorieProgressChart />
             </View>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    scrollView: {
         flex: 1,
+    },
+    container: {
+        flexGrow: 1,
         backgroundColor: '#f0f4f7',
         padding: 20,
+        paddingBottom: 80, // Garante que o conteúdo não seja escondido pela barra de navegação
     },
     title: {
         fontSize: 26,
@@ -25,6 +40,13 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 20,
         textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#4CAF50',
+        marginBottom: 10,
+        marginTop: 10,
     },
     chartSection: {
         backgroundColor: '#fff',
@@ -36,5 +58,6 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 3,
         alignItems: 'center',
+        paddingVertical: 10,
     },
 });

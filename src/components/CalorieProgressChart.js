@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Alert, TouchableOpacity, FlatList } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
-import { auth, db } from '../services/firebaseConfig'; // ✅ Corrigido o caminho de importação
+import { auth, db } from '../services/firebaseConfig';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const screenWidth = Dimensions.get('window').width;
 
-export default function WeightProgressChart() {
+export default function CalorieProgressChart() {
     const [loading, setLoading] = useState(true);
-    const [weightHistory, setWeightHistory] = useState([]);
-    const [goalWeight, setGoalWeight] = useState(null);
+    const [calorieHistory, setCalorieHistory] = useState([]);
+    const [goalCalories, setGoalCalories] = useState(null);
     const userId = auth.currentUser?.uid;
 
     useEffect(() => {
@@ -23,24 +23,25 @@ export default function WeightProgressChart() {
 
         setLoading(true);
 
-        const q = query(collection(db, "users", userId, "weightHistory"), orderBy("timestamp", "asc"));
-        const unsubscribeWeight = onSnapshot(q, (snapshot) => {
+        // A consulta ordena pela data/ID do documento, que no seu caso é o timestamp em formato 'YYYY-MM-DD'
+        const q = query(collection(db, "users", userId, "dailyLog"), orderBy("__name__", "asc"));
+        const unsubscribeCalories = onSnapshot(q, (snapshot) => {
             const history = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                history.push({
-                    id: doc.id,
-                    peso: data.peso,
-                    data: data.data,
-                    timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp),
-                });
+                if (data.totais && data.totais.kcal !== undefined) {
+                    history.push({
+                        id: doc.id,
+                        kcal: parseFloat(data.totais.kcal),
+                        data: doc.id,
+                    });
+                }
             });
-            history.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-            setWeightHistory(history);
+            setCalorieHistory(history);
             setLoading(false);
         }, (error) => {
-            console.error("Erro ao carregar histórico de peso:", error);
-            Alert.alert("Erro", "Não foi possível carregar o histórico de peso.");
+            console.error("Erro ao carregar histórico de calorias:", error);
+            Alert.alert("Erro", "Não foi possível carregar o histórico de calorias.");
             setLoading(false);
         });
 
@@ -48,22 +49,22 @@ export default function WeightProgressChart() {
         const unsubscribePerfil = onSnapshot(perfilRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                setGoalWeight(data.metaPeso || null);
+                setGoalCalories(data.metaCalorica || null);
             }
         }, (error) => {
-            console.error("Erro ao carregar meta de peso:", error);
+            console.error("Erro ao carregar meta calórica:", error);
         });
 
         return () => {
-            unsubscribeWeight();
+            unsubscribeCalories();
             unsubscribePerfil();
         };
     }, [userId]);
 
-    const handleDeleteWeight = (recordId) => {
+    const handleDeleteCalorieRecord = (docId) => {
         Alert.alert(
             "Confirmar Exclusão",
-            "Tem certeza que deseja deletar este registro de peso? Esta ação não pode ser desfeita.",
+            "Tem certeza que deseja deletar este registro de calorias? Esta ação não pode ser desfeita.",
             [
                 {
                     text: "Cancelar",
@@ -77,12 +78,12 @@ export default function WeightProgressChart() {
                                 Alert.alert("Erro", "Usuário não autenticado.");
                                 return;
                             }
-                            const recordRef = doc(db, "users", userId, "weightHistory", recordId);
-                            await deleteDoc(recordRef);
-                            Alert.alert("Sucesso", "Registro de peso deletado.");
+                            const docRef = doc(db, "users", userId, "dailyLog", docId);
+                            await deleteDoc(docRef);
+                            Alert.alert("Sucesso", "Registro de calorias deletado.");
                         } catch (error) {
-                            console.error("Erro ao deletar registro de peso:", error);
-                            Alert.alert("Erro", "Não foi possível deletar o registro de peso.");
+                            console.error("Erro ao deletar registro de calorias:", error);
+                            Alert.alert("Erro", "Não foi possível deletar o registro de calorias.");
                         }
                     },
                     style: "destructive"
@@ -94,31 +95,31 @@ export default function WeightProgressChart() {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4CAF50" />
-                <Text style={{ marginTop: 10 }}>Carregando progresso...</Text>
+                <ActivityIndicator size="large" color="#3498db" />
+                <Text style={{ marginTop: 10 }}>Carregando progresso de calorias...</Text>
             </View>
         );
     }
 
-    if (weightHistory.length === 0) {
+    if (calorieHistory.length === 0) {
         return (
             <View style={styles.noDataContainer}>
-                <Text style={styles.noDataText}>Nenhum registro de peso encontrado.</Text>
-                <Text style={styles.noDataText}>Adicione seu peso para ver o progresso aqui.</Text>
+                <Text style={styles.noDataText}>Nenhum registro de calorias encontrado.</Text>
+                <Text style={styles.noDataText}>Adicione alimentos para ver seu progresso aqui.</Text>
             </View>
         );
     }
 
-    const labels = weightHistory.map(entry => {
+    const labels = calorieHistory.map(entry => {
         const dateObj = new Date(entry.data);
         return isNaN(dateObj.getTime()) ? '' : format(dateObj, 'dd/MM');
     });
-    const dataPoints = weightHistory.map(entry => entry.peso);
+    const dataPoints = calorieHistory.map(entry => entry.kcal);
 
     const chartConfig = {
-        backgroundGradientFrom: '#4CAF50',
-        backgroundGradientTo: '#66BB6A',
-        decimalPlaces: 1,
+        backgroundGradientFrom: '#3498db',
+        backgroundGradientTo: '#5DADE2',
+        decimalPlaces: 0,
         color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
         labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
         style: {
@@ -146,9 +147,9 @@ export default function WeightProgressChart() {
         ]
     };
 
-    if (goalWeight !== null) {
+    if (goalCalories !== null) {
         chartData.datasets.push({
-            data: new Array(labels.length).fill(goalWeight),
+            data: new Array(labels.length).fill(goalCalories),
             color: (opacity = 1) => `rgba(255, 200, 0, ${opacity})`,
             strokeWidth: 2,
             dashArray: [5, 5]
@@ -158,12 +159,13 @@ export default function WeightProgressChart() {
     const renderItem = ({ item }) => (
         <View style={styles.tableRow}>
             <Text style={styles.tableCell}>
+                {/* O seu doc.id é a data 'YYYY-MM-DD', então precisamos parseá-lo para formatar */}
                 {format(new Date(item.data), "d 'de' MMMM", { locale: ptBR })}
             </Text>
-            <Text style={styles.tableCell}>{item.peso.toFixed(1)}</Text>
+            <Text style={styles.tableCell}>{item.kcal.toFixed(0)}</Text>
             <View style={styles.tableCellActions}>
                 <TouchableOpacity
-                    onPress={() => handleDeleteWeight(item.id)}
+                    onPress={() => handleDeleteCalorieRecord(item.id)}
                     style={styles.deleteButton}
                 >
                     <Icon name="trash-can-outline" size={20} color="#EF5350" />
@@ -175,8 +177,8 @@ export default function WeightProgressChart() {
     return (
         <View style={styles.container}>
             <View style={styles.chartWrapper}>
-                {goalWeight !== null && (
-                    <Text style={styles.goalText}>Meta de Peso: {goalWeight} kg</Text>
+                {goalCalories !== null && (
+                    <Text style={styles.goalText}>Meta Calórica: {goalCalories.toFixed(0)} kcal</Text>
                 )}
                 <LineChart
                     data={chartData}
@@ -187,19 +189,19 @@ export default function WeightProgressChart() {
                     style={styles.chart}
                 />
             </View>
-            
+
             <View style={styles.listHeader}>
-                <Text style={styles.listTitle}>Histórico de Peso</Text>
+                <Text style={styles.listTitle}>Histórico de Calorias</Text>
             </View>
 
             <View style={styles.historyTable}>
                 <View style={styles.tableHeader}>
                     <Text style={styles.tableHeaderText}>Data</Text>
-                    <Text style={styles.tableHeaderText}>Peso</Text>
+                    <Text style={styles.tableHeaderText}>Kcal</Text>
                     <Text style={styles.tableHeaderText}>Ações</Text>
                 </View>
                 <FlatList
-                    data={weightHistory.slice().reverse()}
+                    data={calorieHistory.slice().reverse()}
                     keyExtractor={(item) => item.id}
                     renderItem={renderItem}
                     initialNumToRender={5}
@@ -238,7 +240,7 @@ const styles = StyleSheet.create({
     },
     goalText: {
         fontSize: 16,
-        color: '#4CAF50',
+        color: '#3498db',
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 10,
@@ -259,7 +261,7 @@ const styles = StyleSheet.create({
         color: '#34495e',
     },
     historyTable: {
-        height: 200, 
+        height: 200,
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: 15,
@@ -273,7 +275,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         padding: 15,
-        backgroundColor: '#e8f5e9',
+        backgroundColor: '#e6f2ff',
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
         marginBottom: 5,
@@ -281,7 +283,7 @@ const styles = StyleSheet.create({
     tableHeaderText: {
         fontWeight: 'bold',
         fontSize: 16,
-        color: '#4CAF50',
+        color: '#3498db',
         flex: 1,
         textAlign: 'center',
     },

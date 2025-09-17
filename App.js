@@ -10,6 +10,7 @@ import { ActivityIndicator, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
+
 import Login from './src/screens/Login';
 import Cadastro from './src/screens/Cadastro';
 import ProfileDataScreen from './src/screens/ProfileDataScreen';
@@ -20,6 +21,7 @@ import Dashboard from './src/screens/Dashboard';
 import BuscaAlimento from './src/screens/BuscaAlimento';
 import ProgressoScreen from './src/screens/ProgressoScreen';
 import AddWeightScreen from './src/screens/AddWeightScreen';
+import MaisMenu from './src/components/MaisMenu';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -27,14 +29,25 @@ const Tab = createBottomTabNavigator();
 // Stack para a aba Dashboard e suas telas aninhadas
 function DashboardStack() {
     return (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="DashboardMain" component={Dashboard} />
+        <Stack.Navigator>
+            <Stack.Screen 
+                name="DashboardMain" 
+                component={Dashboard}
+                options={({ navigation }) => ({
+                    headerShown: true, // ✅ Adicione aqui
+                    headerTitle: "Dashboard",
+                    headerRight: () => <MaisMenu navigation={navigation} />,
+                    headerStyle: {
+                        backgroundColor: '#4CAF50',
+                    },
+                    headerTintColor: '#fff',
+                })}
+            />
             <Stack.Screen name="AddWeight" component={AddWeightScreen} />
             <Stack.Screen name="BuscaAlimento" component={BuscaAlimento} />
             <Stack.Screen name="ProfileData" component={ProfileDataScreen} />
             <Stack.Screen name="Objetivo" component={ObjetivoScreen} />
             <Stack.Screen name="NivelAtividade" component={NivelAtividadeScreen} />
-
         </Stack.Navigator>
     );
 }
@@ -65,17 +78,21 @@ function MainTabs() {
                 headerShown: false,
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName;
-                    let IconComponent = Ionicons;
+                    let IconComponent; // Mantenha a declaração
+
                     if (route.name === 'Diário') {
-                        IconComponent = Icon;
-                        iconName = focused ? 'silverware-fork-knife' : 'silverware-fork-knife';
+                        IconComponent = Icon; // MaterialCommunityIcons
+                        iconName = focused ? 'food-apple' : 'food-apple-outline';
                     } else if (route.name === 'Progresso') {
-                        IconComponent = Icon;
-                        iconName = focused ? 'chart-line' : 'chart-line';
+                        IconComponent = Ionicons;
+                        // Ícones de Gráfico para Progresso
+                        iconName = focused ? 'stats-chart' : 'stats-chart-outline';
                     } else if (route.name === 'Dashboard') {
                         IconComponent = Ionicons;
-                        iconName = focused ? 'pie-chart' : 'pie-chart-outline';
+                        // Ícones de Perfil para Dashboard
+                        iconName = focused ? 'person-circle' : 'person-circle-outline';
                     }
+
                     return <IconComponent name={iconName} size={size} color={color} />;
                 },
                 tabBarActiveTintColor: '#4CAF50',
