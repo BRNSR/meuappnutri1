@@ -11,11 +11,14 @@ import {
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../services/firebaseConfig";
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 export default function Dashboard({ navigation }) {
     const [perfil, setPerfil] = useState(null);
     const [loading, setLoading] = useState(true);
     const userId = auth.currentUser?.uid;
+    const insets = useSafeAreaInsets();
 
     useFocusEffect(
         React.useCallback(() => {
@@ -51,7 +54,7 @@ export default function Dashboard({ navigation }) {
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
+                 <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
                 <ActivityIndicator size="large" color="#4CAF50" />
                 <Text style={{ marginTop: 10 }}>Carregando dados...</Text>
             </View>
@@ -174,7 +177,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     title: {
-        fontSize: 26,
+        fontSize: 25,
         fontWeight: "bold",
         color: "#333",
         marginBottom: 20,

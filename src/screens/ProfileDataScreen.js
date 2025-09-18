@@ -32,7 +32,7 @@ export default function ProfileDataScreen({ route, navigation, setHasProfile }) 
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>1/3 - Dados Pessoais</Text>
+            <Text style={styles.title}>Dados Pessoais</Text>
             <TextInput
                 style={styles.input}
                 placeholder="Altura (cm)"

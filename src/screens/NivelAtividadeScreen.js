@@ -44,7 +44,7 @@ export default function NivelAtividadeScreen({ route, navigation }) {
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>2/3 - Nível de Atividade</Text>
+            <Text style={styles.title}> Nível de Atividade</Text>
             
             <Text style={styles.sectionTitle}>Seu Sexo:</Text>
             <View style={styles.optionsContainer}>

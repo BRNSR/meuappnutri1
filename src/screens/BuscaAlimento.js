@@ -17,6 +17,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import tabelaAlimentos from "../data/alimentos.json";
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 const RECENTES_KEY = '@alimentos_recentes';
 const FAVORITOS_KEY = '@alimentos_favoritos';
@@ -418,10 +420,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderRadius: 8,
     backgroundColor: '#f0f0f0',
+    marginTop: 20,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 11,
     alignItems: 'center',
     borderRadius: 8,
   },
@@ -504,10 +507,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   modalButtons: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
-  },
+  flexDirection: "row",
+  justifyContent: "space-between", // Mudei de 'flex-end' para 'space-between'
+  width: '100%', // Garanta que a view ocupe toda a largura
+  marginTop: 20, // Opcional: Adiciona um espaçamento acima dos botões
+},
   button: {
     paddingVertical: 10,
     paddingHorizontal: 15,

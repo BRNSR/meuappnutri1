@@ -10,7 +10,6 @@ import { ActivityIndicator, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-
 import Login from './src/screens/Login';
 import Cadastro from './src/screens/Cadastro';
 import ProfileDataScreen from './src/screens/ProfileDataScreen';
@@ -22,6 +21,10 @@ import BuscaAlimento from './src/screens/BuscaAlimento';
 import ProgressoScreen from './src/screens/ProgressoScreen';
 import AddWeightScreen from './src/screens/AddWeightScreen';
 import MaisMenu from './src/components/MaisMenu';
+import Receitas from './src/screens/receitas';
+import ReceitaDetalhes from './src/screens/ReceitaDetalhes';
+import AdicionarReceita from './src/screens/AdicionarReceita';
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -34,7 +37,7 @@ function DashboardStack() {
                 name="DashboardMain" 
                 component={Dashboard}
                 options={({ navigation }) => ({
-                    headerShown: true, // ✅ Adicione aqui
+                    headerShown: true, 
                     headerTitle: "Dashboard",
                     headerRight: () => <MaisMenu navigation={navigation} />,
                     headerStyle: {
@@ -71,6 +74,18 @@ function DiarioStack() {
     );
 }
 
+// Stack para a aba Receitas e suas telas aninhadas
+function ReceitasStack() {
+    return (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="ReceitasMain" component={Receitas} />
+            <Stack.Screen name="ReceitaDetalhes" component={ReceitaDetalhes} />
+            <Stack.Screen name="AdicionarReceita" component={AdicionarReceita} options={{ headerShown: true, headerTitle: 'Adicionar Receita', headerStyle: { backgroundColor: '#4CAF50' }, headerTintColor: '#fff' }} />
+        </Stack.Navigator>
+    );
+}
+
+
 function MainTabs() {
     return (
         <Tab.Navigator
@@ -78,18 +93,19 @@ function MainTabs() {
                 headerShown: false,
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName;
-                    let IconComponent; // Mantenha a declaração
+                    let IconComponent;
 
                     if (route.name === 'Diário') {
-                        IconComponent = Icon; // MaterialCommunityIcons
+                        IconComponent = Icon;
                         iconName = focused ? 'food-apple' : 'food-apple-outline';
                     } else if (route.name === 'Progresso') {
                         IconComponent = Ionicons;
-                        // Ícones de Gráfico para Progresso
                         iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+                    } else if (route.name === 'Receitas') {
+                        IconComponent = Icon;
+                        iconName = focused ? 'chef-hat' : 'chef-hat';
                     } else if (route.name === 'Dashboard') {
                         IconComponent = Ionicons;
-                        // Ícones de Perfil para Dashboard
                         iconName = focused ? 'person-circle' : 'person-circle-outline';
                     }
 
@@ -101,6 +117,7 @@ function MainTabs() {
         >
             <Tab.Screen name="Diário" component={DiarioStack} />
             <Tab.Screen name="Progresso" component={ProgressoStack} />
+            <Tab.Screen name="Receitas" component={ReceitasStack} />
             <Tab.Screen name="Dashboard" component={DashboardStack} />
         </Tab.Navigator>
     );
@@ -151,7 +168,7 @@ export default function App() {
             setLoading(false);
         });
         return subscriber;
-    }, []); // Dependência vazia, roda apenas uma vez
+    }, []);
 
     if (loading) {
         return (

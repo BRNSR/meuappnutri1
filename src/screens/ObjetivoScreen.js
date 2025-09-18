@@ -140,7 +140,7 @@ export default function ObjetivoScreen({ route, navigation }) {
     
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>3/3 - Objetivo</Text>
+            <Text style={styles.title}> Objetivo</Text>
             
             <Text style={styles.sectionTitle}>Seu Objetivo:</Text>
             <View style={styles.optionsContainer}>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Alert, TouchableOpacity, FlatList } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
-import { auth, db } from '../services/firebaseConfig'; // ✅ Corrigido o caminho de importação
+import { auth, db } from '../services/firebaseConfig';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -12,6 +12,7 @@ const screenWidth = Dimensions.get('window').width;
 export default function WeightProgressChart() {
     const [loading, setLoading] = useState(true);
     const [weightHistory, setWeightHistory] = useState([]);
+    const [selectedPeriod, setSelectedPeriod] = useState('7-d');
     const [goalWeight, setGoalWeight] = useState(null);
     const userId = auth.currentUser?.uid;
 
@@ -65,10 +66,7 @@ export default function WeightProgressChart() {
             "Confirmar Exclusão",
             "Tem certeza que deseja deletar este registro de peso? Esta ação não pode ser desfeita.",
             [
-                {
-                    text: "Cancelar",
-                    style: "cancel"
-                },
+                { text: "Cancelar", style: "cancel" },
                 {
                     text: "Deletar",
                     onPress: async () => {
@@ -108,50 +106,56 @@ export default function WeightProgressChart() {
             </View>
         );
     }
+    
+    const periodLimit = selectedPeriod === '7-d' ? 7 : 30;
+    const historyForChart = weightHistory.slice(-periodLimit);
 
-    const labels = weightHistory.map(entry => {
+    const labels = historyForChart.map(entry => {
         const dateObj = new Date(entry.data);
+        if (selectedPeriod === '7-d') {
+            // Alteração aqui: mostra o número do dia
+            return isNaN(dateObj.getTime()) ? '' : format(dateObj, 'd');
+        }
         return isNaN(dateObj.getTime()) ? '' : format(dateObj, 'dd/MM');
     });
-    const dataPoints = weightHistory.map(entry => entry.peso);
+
+    const dataPoints = historyForChart.map(entry => entry.peso);
+
+    const adjustedLabels = labels.map((label, index) => {
+        if (selectedPeriod === '30-d' && index % 5 !== 0) {
+            return '';
+        }
+        return label;
+    });
 
     const chartConfig = {
-        backgroundGradientFrom: '#4CAF50',
-        backgroundGradientTo: '#66BB6A',
+        backgroundGradientFrom: '#ffffff',
+        backgroundGradientTo: '#ffffff',
         decimalPlaces: 1,
-        color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-        labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-        style: {
-            borderRadius: 16,
-        },
+        color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
+        labelColor: (opacity = 1) => `rgba(68, 68, 68, ${opacity})`,
         propsForDots: {
             r: "6",
             strokeWidth: "2",
-            stroke: "#ffa726"
+            stroke: "#4CAF50"
         },
         propsForBackgroundLines: {
             strokeDasharray: '',
-            stroke: 'rgba(255, 255, 255, 0.3)'
+            stroke: '#e6e6e6'
         }
     };
 
-    const chartData = {
-        labels: labels,
-        datasets: [
-            {
-                data: dataPoints,
-                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                strokeWidth: 2
-            }
-        ]
+    const finalChartData = {
+        labels: adjustedLabels,
+        datasets: [{ data: dataPoints }]
     };
 
     if (goalWeight !== null) {
-        chartData.datasets.push({
-            data: new Array(labels.length).fill(goalWeight),
-            color: (opacity = 1) => `rgba(255, 200, 0, ${opacity})`,
+        finalChartData.datasets.push({
+            data: new Array(adjustedLabels.length).fill(goalWeight),
+            color: (opacity = 1) => `rgba(243, 156, 18, ${opacity})`,
             strokeWidth: 2,
-            dashArray: [5, 5]
+            strokeDasharray: [5, 5]
         });
     }
 
@@ -166,7 +170,7 @@ export default function WeightProgressChart() {
                     onPress={() => handleDeleteWeight(item.id)}
                     style={styles.deleteButton}
                 >
-                    <Icon name="trash-can-outline" size={20} color="#EF5350" />
+                    <Icon name="delete-forever" size={20} color="#EF5350" />
                 </TouchableOpacity>
             </View>
         </View>
@@ -174,12 +178,26 @@ export default function WeightProgressChart() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.periodSelector}>
+                <TouchableOpacity
+                    style={[styles.periodButton, selectedPeriod === '7-d' && styles.activePeriodButton]}
+                    onPress={() => setSelectedPeriod('7-d')}
+                >
+                    <Text style={[styles.periodText, selectedPeriod === '7-d' && styles.activePeriodText]}>7 dias</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.periodButton, selectedPeriod === '30-d' && styles.activePeriodButton]}
+                    onPress={() => setSelectedPeriod('30-d')}
+                >
+                    <Text style={[styles.periodText, selectedPeriod === '30-d' && styles.activePeriodText]}>30 dias</Text>
+                </TouchableOpacity>
+            </View>
             <View style={styles.chartWrapper}>
                 {goalWeight !== null && (
-                    <Text style={styles.goalText}>Meta de Peso: {goalWeight} kg</Text>
+                    <Text style={[styles.goalText, { color: '#4CAF50' }]}>Meta de Peso: {goalWeight} kg</Text>
                 )}
                 <LineChart
-                    data={chartData}
+                    data={finalChartData}
                     width={screenWidth - 80}
                     height={220}
                     chartConfig={chartConfig}
@@ -193,10 +211,10 @@ export default function WeightProgressChart() {
             </View>
 
             <View style={styles.historyTable}>
-                <View style={styles.tableHeader}>
-                    <Text style={styles.tableHeaderText}>Data</Text>
-                    <Text style={styles.tableHeaderText}>Peso</Text>
-                    <Text style={styles.tableHeaderText}>Ações</Text>
+                <View style={[styles.tableHeader, { backgroundColor: '#f9f9f9' }]}>
+                    <Text style={[styles.tableHeaderText, { color: '#4CAF50' }]}>Data</Text>
+                    <Text style={[styles.tableHeaderText, { color: '#4CAF50' }]}>Peso</Text>
+                    <Text style={[styles.tableHeaderText, { color: '#4CAF50' }]}>Ações</Text>
                 </View>
                 <FlatList
                     data={weightHistory.slice().reverse()}
@@ -232,13 +250,40 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 10,
     },
+    periodSelector: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: 20,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        alignSelf: 'stretch',
+        borderWidth: 1,
+        borderColor: '#e6e6e6',
+    },
+    periodButton: {
+        flex: 1,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+    },
+    activePeriodButton: {
+        backgroundColor: '#4CAF50',
+    },
+    periodText: {
+        fontSize: 16,
+        color: '#888',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    activePeriodText: {
+        color: '#fff',
+    },
     chartWrapper: {
         alignItems: 'center',
         marginBottom: 20,
     },
     goalText: {
         fontSize: 16,
-        color: '#4CAF50',
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 10,
@@ -246,6 +291,11 @@ const styles = StyleSheet.create({
     chart: {
         marginVertical: 8,
         borderRadius: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
     },
     listHeader: {
         borderBottomWidth: 1,
@@ -259,7 +309,7 @@ const styles = StyleSheet.create({
         color: '#34495e',
     },
     historyTable: {
-        height: 200, 
+        height: 200,
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: 15,
@@ -273,7 +323,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         padding: 15,
-        backgroundColor: '#e8f5e9',
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
         marginBottom: 5,
@@ -281,7 +330,6 @@ const styles = StyleSheet.create({
     tableHeaderText: {
         fontWeight: 'bold',
         fontSize: 16,
-        color: '#4CAF50',
         flex: 1,
         textAlign: 'center',
     },

@@ -1,4 +1,3 @@
-// src/screens/Home.js
 import React, { useState, useEffect } from "react";
 import {
     View,
@@ -13,13 +12,16 @@ import {
 } from "react-native";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { auth, db } from "../services/firebaseConfig";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PieChart } from "react-native-chart-kit";
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
-import { format } from "date-fns";
+// Importe as funções necessárias para manipular a data
+import { format, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; 
 
 const refeicoesIniciais = [
     { id: "cafe", nome: "Café da Manhã", alimentos: [] },
@@ -29,7 +31,10 @@ const refeicoesIniciais = [
 ];
 
 export default function Home({ navigation }) {
-    const [dataAtual, setDataAtual] = useState(new Date());
+    const insets = useSafeAreaInsets();
+    
+    // O estado agora é o que controla a data que está sendo exibida
+    const [dataAtual, setDataAtual] = useState(new Date()); 
     const [refeicoes, setRefeicoes] = useState(refeicoesIniciais);
     const [loading, setLoading] = useState(true);
     const [metaCalorica, setMetaCalorica] = useState(0);
@@ -45,6 +50,8 @@ export default function Home({ navigation }) {
         const unsubPerfil = onSnapshot(perfilRef, (docSnap) => {
             if (docSnap.exists() && docSnap.data().metaCalorica) {
                 setMetaCalorica(docSnap.data().metaCalorica);
+            } else {
+                setMetaCalorica(0);
             }
         });
 
@@ -61,7 +68,7 @@ export default function Home({ navigation }) {
                     setDoc(dailyLogRef, {
                         refeicoes: refeicoesIniciais,
                         totais: { kcal: 0, prot: 0, carb: 0, gord: 0 },
-                    });
+                    }, { merge: true });
                     setRefeicoes(refeicoesIniciais);
                 }
                 setLoading(false);
@@ -80,7 +87,7 @@ export default function Home({ navigation }) {
             unsubscribe();
             unsubPerfil();
         };
-    }, [userId, dataAtual]);
+    }, [userId, dataAtual]); // <--- A dependência de dataAtual garante que os dados sejam recarregados
 
     const adicionarAlimento = (refeicaoId, alimento) => {
         const novasRefeicoes = refeicoes.map((r) =>
@@ -138,44 +145,28 @@ export default function Home({ navigation }) {
         );
     };
 
+    // FUNÇÕES PARA AVANÇAR E VOLTAR A DATA
+    const handleDiaAnterior = () => {
+        setDataAtual(subDays(dataAtual, 1));
+    };
+
+    const handleProximoDia = () => {
+        setDataAtual(addDays(dataAtual, 1));
+    };
+
     const totaisDoDia = calcularTotais(refeicoes.flatMap((r) => r.alimentos));
     
     const caloriasTotais = totaisDoDia.kcal;
     const caloriasRestantes = metaCalorica - caloriasTotais;
+    
+    const fillPercentage = metaCalorica > 0 ? (caloriasTotais / metaCalorica) * 100 : 0;
+    const progressFill = Math.min(fillPercentage, 100);
 
-    const dadosGrafico = [
-        {
-            name: "Proteínas",
-            calories: Number(totaisDoDia.prot.toFixed(0)),
-            color: "#2ecc71",
-            legendFontColor: "#7F7F7F",
-            legendFontSize: 15,
-        },
-        {
-            name: "Carboidratos",
-            calories: Number(totaisDoDia.carb.toFixed(0)),
-            color: "#3498db",
-            legendFontColor: "#7F7F7F",
-            legendFontSize: 15,
-        },
-        {
-            name: "Gorduras",
-            calories: Number(totaisDoDia.gord.toFixed(0)),
-            color: "#e67e22",
-            legendFontColor: "#7F7F7F",
-            legendFontSize: 15,
-        },
-    ];
-
-    const chartConfig = {
-        backgroundGradientFrom: "#fff",
-        backgroundGradientTo: "#fff",
-        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-    };
+    const progressColor = caloriasTotais > metaCalorica ? "#E74C3C" : "#4CAF50";
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
+            <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
                 <ActivityIndicator size="large" color="#4CAF50" />
                 <Text style={{ marginTop: 10 }}>Carregando dados...</Text>
             </View>
@@ -184,46 +175,72 @@ export default function Home({ navigation }) {
 
     return (
         <ScrollView 
-            style={styles.scrollView} 
+            style={[styles.scrollView, { paddingTop: insets.top }]} 
             contentContainerStyle={styles.container}
         >
-            <Text style={styles.dateText}>
-                {format(dataAtual, "EEEE, d 'de' MMMM", { locale: ptBR })}
-            </Text>
-            <View style={styles.summaryCard}>
-                <Text style={styles.summaryTitle}>Resumo do Dia</Text>
+            {/* NOVO BLOCO: Seleção de data */}
+            <View style={styles.dateSelectorContainer}>
+                <TouchableOpacity onPress={handleDiaAnterior}>
+                    <Ionicons name="chevron-back" size={30} color="#333" />
+                </TouchableOpacity>
+                <Text style={styles.dateText}>
+                    {format(dataAtual, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                </Text>
+                <TouchableOpacity onPress={handleProximoDia}>
+                    <Ionicons name="chevron-forward" size={30} color="#333" />
+                </TouchableOpacity>
+            </View>
+            
+            <View style={styles.card}>
+                <AnimatedCircularProgress
+                    size={180}
+                    width={10}
+                    fill={progressFill}
+                    tintColor={progressColor}
+                    backgroundColor="#D3D3D3"
+                    lineCap="round"
+                    style={styles.kcalChart}
+                >
+                    {
+                        (fill) => (
+                            <View style={styles.kcalTextContainer}>
+                                <Text style={styles.kcalCount}>{caloriasTotais.toFixed(0)}</Text>
+                                <Text style={styles.kcalLabel}>kcal</Text>
+                            </View>
+                        )
+                    }
+                </AnimatedCircularProgress>
+
                 <View style={styles.summaryRow}>
                     <View style={styles.summaryItem}>
                         <Text style={styles.summaryLabel}>Meta</Text>
                         <Text style={styles.summaryValue}>{metaCalorica.toFixed(0)} kcal</Text>
                     </View>
                     <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Consumidas</Text>
-                        <Text style={styles.summaryValue}>{caloriasTotais.toFixed(0)} kcal</Text>
-                    </View>
-                    <View style={styles.summaryItem}>
                         <Text style={styles.summaryLabel}>Restantes</Text>
                         <Text style={styles.summaryValue}>{Math.max(0, caloriasRestantes).toFixed(0)} kcal</Text>
                     </View>
                 </View>
-            </View>
 
-            {caloriasTotais > 0 && (
-                <View style={styles.chartCard}>
-                    <Text style={styles.chartTitle}>Distribuição de Macros (em Gramas)</Text>
-                    <PieChart
-                        data={dadosGrafico}
-                        width={Dimensions.get("window").width - 40}
-                        height={220}
-                        chartConfig={chartConfig}
-                        accessor={"calories"}
-                        backgroundColor={"transparent"}
-                        paddingLeft={"15"}
-                        center={[10, 10]}
-                        absolute
-                    />
+                <View style={styles.separator}></View>
+                <View style={styles.legendContainer}>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendColor, { backgroundColor: "#2ecc71" }]} />
+                        <Text style={styles.legendTitle}>Proteínas</Text>
+                        <Text style={styles.legendValue}>{totaisDoDia.prot.toFixed(0)}g</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendColor, { backgroundColor: "#3498db" }]} />
+                        <Text style={styles.legendTitle}>Carboidratos</Text>
+                        <Text style={styles.legendValue}>{totaisDoDia.carb.toFixed(0)}g</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendColor, { backgroundColor: "#e67e22" }]} />
+                        <Text style={styles.legendTitle}>Gorduras</Text>
+                        <Text style={styles.legendValue}>{totaisDoDia.gord.toFixed(0)}g</Text>
+                    </View>
                 </View>
-            )}
+            </View>
 
             <FlatList
                 data={refeicoes}
@@ -250,7 +267,7 @@ export default function Home({ navigation }) {
                                 <View key={index} style={styles.alimentoLinha}>
                                     <View>
                                         <Text style={styles.nome}>
-                                            {alimento.nome} ({alimento.gramas}g)
+                                            {alimento.nome} ({alimento.gramas.toFixed(0)}g)
                                         </Text>
                                         <Text style={styles.macros}>
                                             {parseFloat(alimento.kcal).toFixed(1)} kcal | {parseFloat(alimento.prot).toFixed(1)}g prot | {parseFloat(alimento.carb).toFixed(1)}g carb | {parseFloat(alimento.gord).toFixed(1)}g gord
@@ -260,7 +277,7 @@ export default function Home({ navigation }) {
                                         onPress={() => removerAlimento(item.id, index)}
                                         style={styles.removeButton}
                                     >
-                                        <Ionicons name="close-circle" size={24} color="#E74C3C" />
+                                        <MaterialCommunityIcons name="delete-forever" size={24} color="#E74C3C" />
                                     </TouchableOpacity>
                                 </View>
                             ))}
@@ -294,14 +311,20 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
+    // NOVO ESTILO: Container para o seletor de data
+    dateSelectorContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
     dateText: {
-        fontSize: 20,
+        fontSize: 25,
         fontWeight: "bold",
         color: "#333",
-        marginBottom: 20,
         textAlign: "center",
     },
-    summaryCard: {
+    card: {
         backgroundColor: "#fff",
         borderRadius: 12,
         padding: 20,
@@ -311,22 +334,41 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 3,
+        alignItems: "center",
     },
-    summaryTitle: {
+    cardTitle: {
         fontSize: 18,
         fontWeight: "bold",
         color: "#4CAF50",
-        marginBottom: 10,
+        marginBottom: 15,
         textAlign: "center",
+    },
+    kcalChart: {
+        marginBottom: 15,
+    },
+    kcalTextContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    kcalCount: {
+        fontSize: 48,
+        fontWeight: 'bold',
+        color: '#4CAF50',
+    },
+    kcalLabel: {
+        fontSize: 16,
+        color: '#888',
+        marginTop: 5,
     },
     summaryRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
+        justifyContent: "space-around",
         alignItems: "center",
+        width: '100%',
     },
     summaryItem: {
-        flex: 1,
         alignItems: "center",
+        paddingHorizontal: 10,
     },
     summaryLabel: {
         fontSize: 14,
@@ -338,23 +380,35 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         color: "#333",
     },
-    chartCard: {
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        padding: 10,
-        marginBottom: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-        alignItems: "center",
+    separator: {
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: '#ccc',
+        width: '80%',
+        marginVertical: 15,
     },
-    chartTitle: {
-        fontSize: 16,
-        fontWeight: "bold",
-        marginBottom: 10,
-        color: "#4CAF50",
+    legendContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 10,
+        width: '100%',
+    },
+    legendItem: {
+        alignItems: 'center',
+    },
+    legendColor: {
+        width: 15,
+        height: 15,
+        borderRadius: 7.5,
+        marginBottom: 5,
+    },
+    legendTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    legendValue: {
+        fontSize: 14,
+        color: '#666',
     },
     mealCard: {
         backgroundColor: "#fff",

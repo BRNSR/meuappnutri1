@@ -2,11 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import WeightProgressChart from '../components/WeightProgressChart';
 import CalorieProgressChart from '../components/CalorieProgressChart';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProgressoScreen() {
+    const insets = useSafeAreaInsets();
     return (
         <ScrollView 
-            style={styles.scrollView}
+            style={[styles.scrollView, { paddingTop: insets.top }]}
             contentContainerStyle={styles.container}
         >
             <Text style={styles.title}>Progresso Geral</Text>
@@ -35,7 +37,7 @@ const styles = StyleSheet.create({
         paddingBottom: 80, // Garante que o conteúdo não seja escondido pela barra de navegação
     },
     title: {
-        fontSize: 26,
+        fontSize: 25,
         fontWeight: 'bold',
         color: '#333',
         marginBottom: 20,

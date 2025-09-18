@@ -12,6 +12,7 @@ const screenWidth = Dimensions.get('window').width;
 export default function CalorieProgressChart() {
     const [loading, setLoading] = useState(true);
     const [calorieHistory, setCalorieHistory] = useState([]);
+    const [selectedPeriod, setSelectedPeriod] = useState('7-d');
     const [goalCalories, setGoalCalories] = useState(null);
     const userId = auth.currentUser?.uid;
 
@@ -22,8 +23,6 @@ export default function CalorieProgressChart() {
         }
 
         setLoading(true);
-
-        // A consulta ordena pela data/ID do documento, que no seu caso é o timestamp em formato 'YYYY-MM-DD'
         const q = query(collection(db, "users", userId, "dailyLog"), orderBy("__name__", "asc"));
         const unsubscribeCalories = onSnapshot(q, (snapshot) => {
             const history = [];
@@ -66,10 +65,7 @@ export default function CalorieProgressChart() {
             "Confirmar Exclusão",
             "Tem certeza que deseja deletar este registro de calorias? Esta ação não pode ser desfeita.",
             [
-                {
-                    text: "Cancelar",
-                    style: "cancel"
-                },
+                { text: "Cancelar", style: "cancel" },
                 {
                     text: "Deletar",
                     onPress: async () => {
@@ -110,56 +106,61 @@ export default function CalorieProgressChart() {
         );
     }
 
-    const labels = calorieHistory.map(entry => {
+    const periodLimit = selectedPeriod === '7-d' ? 7 : 30;
+    const historyForChart = calorieHistory.slice(-periodLimit);
+
+    const labels = historyForChart.map(entry => {
         const dateObj = new Date(entry.data);
+        if (selectedPeriod === '7-d') {
+            // Alteração aqui: mostra o número do dia
+            return isNaN(dateObj.getTime()) ? '' : format(dateObj, 'd');
+        }
         return isNaN(dateObj.getTime()) ? '' : format(dateObj, 'dd/MM');
     });
-    const dataPoints = calorieHistory.map(entry => entry.kcal);
 
+    const dataPoints = historyForChart.map(entry => entry.kcal);
+
+    const adjustedLabels = labels.map((label, index) => {
+        if (selectedPeriod === '30-d' && index % 5 !== 0) {
+            return '';
+        }
+        return label;
+    });
+    
     const chartConfig = {
-        backgroundGradientFrom: '#3498db',
-        backgroundGradientTo: '#5DADE2',
+        backgroundGradientFrom: '#ffffff',
+        backgroundGradientTo: '#ffffff',
         decimalPlaces: 0,
-        color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-        labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-        style: {
-            borderRadius: 16,
-        },
+        color: (opacity = 1) => `rgba(52, 152, 219, ${opacity})`,
+        labelColor: (opacity = 1) => `rgba(68, 68, 68, ${opacity})`,
         propsForDots: {
             r: "6",
             strokeWidth: "2",
-            stroke: "#ffa726"
+            stroke: "#3498db"
         },
         propsForBackgroundLines: {
             strokeDasharray: '',
-            stroke: 'rgba(255, 255, 255, 0.3)'
+            stroke: '#e6e6e6'
         }
     };
 
-    const chartData = {
-        labels: labels,
-        datasets: [
-            {
-                data: dataPoints,
-                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                strokeWidth: 2
-            }
-        ]
+    const finalChartData = {
+        labels: adjustedLabels,
+        datasets: [{ data: dataPoints }]
     };
 
     if (goalCalories !== null) {
-        chartData.datasets.push({
-            data: new Array(labels.length).fill(goalCalories),
-            color: (opacity = 1) => `rgba(255, 200, 0, ${opacity})`,
+        finalChartData.datasets.push({
+            data: new Array(adjustedLabels.length).fill(goalCalories),
+            color: (opacity = 1) => `rgba(243, 156, 18, ${opacity})`,
             strokeWidth: 2,
-            dashArray: [5, 5]
+            strokeDasharray: [5, 5]
         });
     }
 
     const renderItem = ({ item }) => (
         <View style={styles.tableRow}>
             <Text style={styles.tableCell}>
-                {/* O seu doc.id é a data 'YYYY-MM-DD', então precisamos parseá-lo para formatar */}
                 {format(new Date(item.data), "d 'de' MMMM", { locale: ptBR })}
             </Text>
             <Text style={styles.tableCell}>{item.kcal.toFixed(0)}</Text>
@@ -168,7 +169,7 @@ export default function CalorieProgressChart() {
                     onPress={() => handleDeleteCalorieRecord(item.id)}
                     style={styles.deleteButton}
                 >
-                    <Icon name="trash-can-outline" size={20} color="#EF5350" />
+                    <Icon name="delete-forever" size={20} color="#EF5350" />
                 </TouchableOpacity>
             </View>
         </View>
@@ -176,12 +177,26 @@ export default function CalorieProgressChart() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.periodSelector}>
+                <TouchableOpacity
+                    style={[styles.periodButton, selectedPeriod === '7-d' && styles.activePeriodButton]}
+                    onPress={() => setSelectedPeriod('7-d')}
+                >
+                    <Text style={[styles.periodText, selectedPeriod === '7-d' && styles.activePeriodText]}>7 dias</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.periodButton, selectedPeriod === '30-d' && styles.activePeriodButton]}
+                    onPress={() => setSelectedPeriod('30-d')}
+                >
+                    <Text style={[styles.periodText, selectedPeriod === '30-d' && styles.activePeriodText]}>30 dias</Text>
+                </TouchableOpacity>
+            </View>
             <View style={styles.chartWrapper}>
                 {goalCalories !== null && (
-                    <Text style={styles.goalText}>Meta Calórica: {goalCalories.toFixed(0)} kcal</Text>
+                    <Text style={[styles.goalText, { color: '#3498db' }]}>Meta Calórica: {goalCalories.toFixed(0)} kcal</Text>
                 )}
                 <LineChart
-                    data={chartData}
+                    data={finalChartData}
                     width={screenWidth - 80}
                     height={220}
                     chartConfig={chartConfig}
@@ -195,10 +210,10 @@ export default function CalorieProgressChart() {
             </View>
 
             <View style={styles.historyTable}>
-                <View style={styles.tableHeader}>
-                    <Text style={styles.tableHeaderText}>Data</Text>
-                    <Text style={styles.tableHeaderText}>Kcal</Text>
-                    <Text style={styles.tableHeaderText}>Ações</Text>
+                <View style={[styles.tableHeader, { backgroundColor: '#f9f9f9' }]}>
+                    <Text style={[styles.tableHeaderText, { color: '#3498db' }]}>Data</Text>
+                    <Text style={[styles.tableHeaderText, { color: '#3498db' }]}>Kcal</Text>
+                    <Text style={[styles.tableHeaderText, { color: '#3498db' }]}>Ações</Text>
                 </View>
                 <FlatList
                     data={calorieHistory.slice().reverse()}
@@ -234,13 +249,40 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 10,
     },
+    periodSelector: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: 20,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        alignSelf: 'stretch',
+        borderWidth: 1,
+        borderColor: '#e6e6e6',
+    },
+    periodButton: {
+        flex: 1,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+    },
+    activePeriodButton: {
+        backgroundColor: '#3498db',
+    },
+    periodText: {
+        fontSize: 16,
+        color: '#888',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    activePeriodText: {
+        color: '#fff',
+    },
     chartWrapper: {
         alignItems: 'center',
         marginBottom: 20,
     },
     goalText: {
         fontSize: 16,
-        color: '#3498db',
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 10,
@@ -248,6 +290,11 @@ const styles = StyleSheet.create({
     chart: {
         marginVertical: 8,
         borderRadius: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
     },
     listHeader: {
         borderBottomWidth: 1,
@@ -275,7 +322,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         padding: 15,
-        backgroundColor: '#e6f2ff',
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
         marginBottom: 5,
@@ -283,7 +329,6 @@ const styles = StyleSheet.create({
     tableHeaderText: {
         fontWeight: 'bold',
         fontSize: 16,
-        color: '#3498db',
         flex: 1,
         textAlign: 'center',
     },
