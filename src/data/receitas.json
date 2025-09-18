@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1",
+    "nome": "Omelete com Queijo",
+    "kcal": 250,
+    "prot": 20,
+    "carb": 2,
+    "gord": 18,
+    "ingredientes": ["2 ovos", "50g de queijo", "Sal e pimenta a gosto"],
+    "preparo": "Bata os ovos, adicione o queijo e cozinhe em uma frigideira."
+  },
+  {
+    "id": "2",
+    "nome": "Salada de Frango com Abacate",
+    "kcal": 380,
+    "prot": 35,
+    "carb": 15,
+    "gord": 20,
+    "ingredientes": ["150g de peito de frango desfiado", "1/2 abacate", "Folhas verdes", "Tomate cereja"],
+    "preparo": "Misture todos os ingredientes em uma tigela e tempere a gosto."
+  },
+  {
+    "id": "3",
+    "nome": "Shake de Proteína com Frutas",
+    "kcal": 220,
+    "prot": 25,
+    "carb": 28,
+    "gord": 3,
+    "ingredientes": ["1 scoop de whey protein", "1 banana", "200ml de leite vegetal", "Morangos"],
+    "preparo": "Bata todos os ingredientes no liquidificador até obter uma mistura homogênea."
+  }
+]

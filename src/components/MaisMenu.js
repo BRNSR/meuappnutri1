@@ -45,7 +45,7 @@ export default function MaisMenu({ navigation }) {
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.menuItem} onPress={() => {
                             setModalVisible(false);
-                            Alert.alert('Funcionalidade', 'Configurações em breve!');
+                            Alert.alert('Funcionalidade', 'em breve!');
                         }}>
                             <Text style={styles.menuText}>Configurações</Text>
                         </TouchableOpacity>

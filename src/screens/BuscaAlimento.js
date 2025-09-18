@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderRadius: 8,
     backgroundColor: '#f0f0f0',
-    marginTop: 20,
+    marginTop: 1,
   },
   tabButton: {
     flex: 1,

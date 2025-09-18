@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import WeightProgressChart from '../components/WeightProgressChart';
-import CalorieProgressChart from '../components/CalorieProgressChart';
+import WeightProgressChart from '../components/ProgressoPeso';
+import CalorieProgressChart from '../components/ProgressoKcal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProgressoScreen() {

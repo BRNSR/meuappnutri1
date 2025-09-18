@@ -4,15 +4,13 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function ReceitaDetalhes({ route, navigation }) {
   const { receita } = route.params;
+  
+  // Agora a tela depende da barra de navegação fornecida pelo Stack.Navigator
+  // O título será definido no arquivo de navegação (ex: App.js)
+  // com base no nome da receita.
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>{receita.nome}</Text>
-      </View>
       <ScrollView style={styles.content}>
         
         <View style={styles.section}>
@@ -42,10 +40,9 @@ export default function ReceitaDetalhes({ route, navigation }) {
           <Text style={styles.sectionTitle}>Modo de Preparo</Text>
           <Text style={styles.prepText}>{receita.preparo}</Text>
         </View>
-
       </ScrollView>
 
-     
+      
     </View>
   );
 }
@@ -54,22 +51,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0f4f7',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
-  },
-  backButton: {
-    marginRight: 10,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
   },
   content: {
     padding: 20,
@@ -109,17 +90,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 10,
-    margin: 20,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
 });

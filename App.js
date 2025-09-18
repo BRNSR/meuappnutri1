@@ -19,7 +19,7 @@ import Home from './src/screens/Home';
 import Dashboard from './src/screens/Dashboard';
 import BuscaAlimento from './src/screens/BuscaAlimento';
 import ProgressoScreen from './src/screens/ProgressoScreen';
-import AddWeightScreen from './src/screens/AddWeightScreen';
+import AddWeightScreen from './src/screens/AdicionarPeso';
 import MaisMenu from './src/components/MaisMenu';
 import Receitas from './src/screens/receitas';
 import ReceitaDetalhes from './src/screens/ReceitaDetalhes';
@@ -46,8 +46,25 @@ function DashboardStack() {
                     headerTintColor: '#fff',
                 })}
             />
-            <Stack.Screen name="AddWeight" component={AddWeightScreen} />
-            <Stack.Screen name="BuscaAlimento" component={BuscaAlimento} />
+            <Stack.Screen name="AddWeight" component={AddWeightScreen} 
+            options={{ 
+                title: 'Dashboard ',
+                headerBackTitle: 'Dashboard',
+                headerStyle: { backgroundColor: '#4CAF50' },
+                headerTintColor: '#fff',
+                }} 
+            />
+            <Stack.Screen 
+                name="BuscaAlimento" 
+                component={BuscaAlimento} 
+                options={{
+                    headerShown: true,
+                    headerTitle: "Buscar Alimento",
+                    headerBackTitle: 'Voltar',
+                    headerStyle: { backgroundColor: '#4CAF50' },
+                    headerTintColor: '#fff',
+                }}
+            />
             <Stack.Screen name="ProfileData" component={ProfileDataScreen} />
             <Stack.Screen name="Objetivo" component={ObjetivoScreen} />
             <Stack.Screen name="NivelAtividade" component={NivelAtividadeScreen} />
@@ -69,18 +86,36 @@ function DiarioStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="DiarioMain" component={Home} />
-            <Stack.Screen name="BuscaAlimento" component={BuscaAlimento} />
+            <Stack.Screen 
+                name="BuscaAlimento" 
+                component={BuscaAlimento} 
+                options={{
+                    headerShown: true, // Adiciona o cabeçalho para esta tela
+                    headerTitle: "Diário", // Define o título do cabeçalho
+                    headerBackTitle: 'Voltar', // Texto do botão de voltar
+                    headerStyle: { backgroundColor: '#4CAF50' },
+                    headerTintColor: '#fff',
+                }}
+            />
         </Stack.Navigator>
     );
 }
-
-// Stack para a aba Receitas e suas telas aninhadas
 function ReceitasStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="ReceitasMain" component={Receitas} />
-            <Stack.Screen name="ReceitaDetalhes" component={ReceitaDetalhes} />
-            <Stack.Screen name="AdicionarReceita" component={AdicionarReceita} options={{ headerShown: true, headerTitle: 'Adicionar Receita', headerStyle: { backgroundColor: '#4CAF50' }, headerTintColor: '#fff' }} />
+            <Stack.Screen name="ReceitaDetalhes" component={ReceitaDetalhes} 
+            options={({ route }) => ({
+            headerShown: true,
+            headerTitle: route.params.receita.nome, // Acessa o nome da receita e define como título
+            headerBackTitle: 'Voltar',
+            headerStyle: { backgroundColor: '#4CAF50' },
+            headerTintColor: '#fff',
+  })}/>
+            <Stack.Screen name="AdicionarReceita" component={AdicionarReceita} 
+            options={{ headerShown: true, 
+            headerTitle: 'Receita', 
+            headerStyle: { backgroundColor: '#4CAF50' }, headerTintColor: '#fff' }} />
         </Stack.Navigator>
     );
 }

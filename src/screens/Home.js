@@ -23,6 +23,8 @@ import { ptBR } from "date-fns/locale";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; 
 
+
+
 const refeicoesIniciais = [
     { id: "cafe", nome: "Café da Manhã", alimentos: [] },
     { id: "almoco", nome: "Almoço", alimentos: [] },
