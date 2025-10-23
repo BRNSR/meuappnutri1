@@ -63,7 +63,7 @@ export default function CalorieProgressChart() {
     const handleDeleteCalorieRecord = (docId) => {
         Alert.alert(
             "Confirmar Exclusão",
-            "Tem certeza que deseja deletar este registro de calorias? Esta ação não pode ser desfeita.",
+            "Tem certeza que deseja deletar este registro de calorias?",
             [
                 { text: "Cancelar", style: "cancel" },
                 {

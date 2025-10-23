@@ -19,7 +19,6 @@ export default function Login({ navigation, setHasProfile }) {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
             const docRef = doc(db, "users", user.uid, "profile", "data");
             const docSnap = await getDoc(docRef);
 

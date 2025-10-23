@@ -67,4 +67,14 @@ const styles = StyleSheet.create({
     input: { width: '100%', height: 50, borderColor: '#ccc', borderWidth: 1, marginBottom: 15, paddingHorizontal: 15, borderRadius: 8 },
     button: { width: '100%', height: 50, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
     buttonText: { color: 'white', fontSize: 18 },
+
+
+    container: { 
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: '#ffffffff'   // 👈 fundo branco
+    },
+
 });

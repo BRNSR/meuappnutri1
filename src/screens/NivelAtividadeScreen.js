@@ -112,4 +112,14 @@ const styles = StyleSheet.create({
     },
     button: { width: '100%', height: 50, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', borderRadius: 8, marginTop: 20 },
     buttonText: { color: 'white', fontSize: 18 },
+
+    container: { 
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: '#ffffffff'   // 👈 fundo branco
+    },
+
+    
 });

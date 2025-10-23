@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native'; // 👈 Importe o Alert
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler'; // 👈 Importe os componentes de Gesture Handler
+import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler'; 
 
 // Importa as receitas padrão do novo arquivo JSON
 import receitasPadrao from '../data/receitas.json';
@@ -12,7 +12,8 @@ import receitasPadrao from '../data/receitas.json';
 const RECEITAS_KEY = '@receitas_usuario';
 
 export default function Receitas({ navigation }) {
-    const insets = useSafeAreaInsets();
+    // Mantido por compatibilidade, mas o padding agora é controlado pelo Stack Navigator
+    const insets = useSafeAreaInsets(); 
     const [todasAsReceitas, setTodasAsReceitas] = useState([]);
 
     const carregarReceitasDoAsyncStorage = async () => {
@@ -69,9 +70,31 @@ export default function Receitas({ navigation }) {
         );
     };
     
-    // Renderiza o botão de deletar ao arrastar
+    // --------------------------------------------------------
+    // AÇÃO PARA APARECER NO CANTO ESQUERDO (Arrastar para a DIREITA)
+    // --------------------------------------------------------
+    const renderLeftActions = (item) => {
+        // Validação: só permite deletar receitas do usuário, não as padrão
+        const isDeletable = !receitasPadrao.some(rec => rec.id === item.id);
+        
+        if (!isDeletable) {
+            return null;
+        }
+        
+        return (
+            <TouchableOpacity
+                style={styles.deleteButtonLeft} // Usa o novo estilo
+                onPress={() => handleDelete(item.id, item.nome)}
+            >
+                <Icon name="delete-forever-outline" size={24} color="#fff" />
+                <Text style={styles.deleteButtonText}>Remover</Text>
+            </TouchableOpacity>
+        );
+    };
+
+    // Função original de renderização para o lado direito (mantida por segurança/referência)
     const renderRightActions = (item) => {
-        // Para evitar que receitas padrão sejam deletadas, você pode adicionar uma validação aqui
+        // Validação: só permite deletar receitas do usuário, não as padrão
         const isDeletable = !receitasPadrao.some(rec => rec.id === item.id);
         
         if (!isDeletable) {
@@ -88,8 +111,10 @@ export default function Receitas({ navigation }) {
             </TouchableOpacity>
         );
     };
+    // --------------------------------------------------------
 
     const renderItem = ({ item }) => (
+        // ATUALIZADO: Usando renderLeftActions para o botão aparecer no canto esquerdo
         <Swipeable renderRightActions={() => renderRightActions(item)}>
             <TouchableOpacity 
                 style={styles.card}
@@ -107,7 +132,7 @@ export default function Receitas({ navigation }) {
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <View style={[styles.container, { paddingTop: insets.top }]}>
+            <View style={styles.container}> 
                 <FlatList
                     data={todasAsReceitas}
                     keyExtractor={item => item.id}
@@ -179,7 +204,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 5,
     },
-    // Estilos do botão de deletar
+    // Estilos do botão de deletar para o lado DIREITO (renderRightActions)
     deleteButton: {
         backgroundColor: '#e74c3c', // Vermelho
         justifyContent: 'center',
@@ -187,7 +212,18 @@ const styles = StyleSheet.create({
         width: 90,
         height: '100%',
         borderRadius: 10,
-        marginLeft: 5,
+        marginLeft: 5, 
+        paddingHorizontal: 10,
+    },
+    // NOVO ESTILO: Botão de deletar para o lado ESQUERDO (renderLeftActions)
+    deleteButtonLeft: {
+        backgroundColor: '#e74c3c', // Vermelho
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 90,
+        height: '100%',
+        borderRadius: 10,
+        marginRight: 5, // Garante que o botão esteja aninhado à esquerda
         paddingHorizontal: 10,
     },
     deleteButtonText: {

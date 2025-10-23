@@ -77,4 +77,13 @@ const styles = StyleSheet.create({
     buttonText: { color: 'white', fontSize: 18 },
     linkText: { color: '#4CAF50', marginTop: 10 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+    container: { 
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: '#ffffffff'   // 👈 fundo branco
+    },
+    
 });

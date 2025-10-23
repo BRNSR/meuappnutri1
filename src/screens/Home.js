@@ -7,7 +7,6 @@ import {
     StyleSheet,
     ActivityIndicator,
     Alert,
-    Dimensions,
     ScrollView,
 } from "react-native";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
@@ -22,7 +21,6 @@ import { ptBR } from "date-fns/locale";
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; 
-
 
 
 const refeicoesIniciais = [
@@ -89,7 +87,7 @@ export default function Home({ navigation }) {
             unsubscribe();
             unsubPerfil();
         };
-    }, [userId, dataAtual]); // <--- A dependência de dataAtual garante que os dados sejam recarregados
+    }, [userId, dataAtual]);
 
     const adicionarAlimento = (refeicaoId, alimento) => {
         const novasRefeicoes = refeicoes.map((r) =>
@@ -177,10 +175,15 @@ export default function Home({ navigation }) {
 
     return (
         <ScrollView 
-            style={[styles.scrollView, { paddingTop: insets.top }]} 
-            contentContainerStyle={styles.container}
+            // 💡 AJUSTE AQUI: Remove o paddingTop do style e aplica no contentContainerStyle
+            style={styles.scrollView} 
+            contentContainerStyle={[
+                styles.container, 
+                // ✅ Aplica o insets.top (safe area) + uma margem extra (ex: 15px) para respirar
+                { paddingTop: insets.top + 5 } 
+            ]}
         >
-            {/* NOVO BLOCO: Seleção de data */}
+            {/* BLOCO: Seleção de data */}
             <View style={styles.dateSelectorContainer}>
                 <TouchableOpacity onPress={handleDiaAnterior}>
                     <Ionicons name="chevron-back" size={30} color="#333" />
@@ -305,7 +308,8 @@ const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
         backgroundColor: "#f0f4f7",
-        padding: 20,
+        padding: 15,
+        // ❌ REMOVIDO o `paddingTop` fixo daqui
         paddingBottom: 80,
     },
     loadingContainer: {
@@ -313,12 +317,13 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
-    // NOVO ESTILO: Container para o seletor de data
     dateSelectorContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 15,
+        // ✅ Ajustado: Removemos o insets.top da ScrollView e aplicamos padding no container,
+        // mantendo o espaçamento superior e o espaço de 15px inferior.
     },
     dateText: {
         fontSize: 25,
@@ -326,16 +331,17 @@ const styles = StyleSheet.create({
         color: "#333",
         textAlign: "center",
     },
+    // 🚀 ESTILO MODERNO: Card principal com bordas mais suaves e sombra sutil
     card: {
         backgroundColor: "#fff",
-        borderRadius: 12,
+        borderRadius: 16, // Aumentado para 16
         padding: 20,
         marginBottom: 20,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
+        shadowOpacity: 0.08, // Reduzido drasticamente
+        shadowRadius: 8, // Aumentado o raio
+        elevation: 5,
         alignItems: "center",
     },
     cardTitle: {
@@ -412,16 +418,17 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
     },
+    // 🚀 ESTILO MODERNO: Cards de Refeição com bordas mais suaves e sombra sutil
     mealCard: {
         backgroundColor: "#fff",
-        borderRadius: 12,
+        borderRadius: 16, // Aumentado para 16
         padding: 20,
         marginBottom: 20,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
+        shadowOpacity: 0.08, // Reduzido drasticamente
+        shadowRadius: 8, // Aumentado o raio
+        elevation: 5,
     },
     refeicaoHeader: {
         flexDirection: "row",

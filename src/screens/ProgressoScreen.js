@@ -6,20 +6,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProgressoScreen() {
     const insets = useSafeAreaInsets();
+    
+    // ✅ Otimização: Se você estiver usando o Header de Navegação
+    // para mostrar o título 'Progresso Geral', você pode remover o insets.top
+    // do ScrollView e a tag <Text style={styles.title}>.
+    
     return (
         <ScrollView 
-            style={[styles.scrollView, { paddingTop: insets.top }]}
+            // 💡 Se o Header está ativado, remova o paddingTop: insets.top
+            style={styles.scrollView} 
             contentContainerStyle={styles.container}
         >
-            <Text style={styles.title}>Progresso Geral</Text>
-            
-            <Text style={styles.subtitle}>Progresso de Peso</Text>
-            <View style={styles.chartSection}>
+            {/* Seção de Progresso de Peso */}
+            <View style={styles.chartCard}>
+                <Text style={styles.cardTitle}>Progresso de Peso</Text>
                 <WeightProgressChart />
             </View>
-
-            <Text style={styles.subtitle}>Consumo de Calorias</Text>
-            <View style={styles.chartSection}>
+            {/* Seção de Consumo de Calorias */}
+            <View style={styles.chartCard}>
+                <Text style={styles.cardTitle}>Consumo Calórico Diário</Text>
                 <CalorieProgressChart />
             </View>
         </ScrollView>
@@ -32,34 +37,44 @@ const styles = StyleSheet.create({
     },
     container: {
         flexGrow: 1,
-        backgroundColor: '#f0f4f7',
+        backgroundColor: '#f0f4f7', // Fundo Soft UI mantido
         padding: 20,
-        paddingBottom: 80, // Garante que o conteúdo não seja escondido pela barra de navegação
+        // ✅ Se você removeu o insets.top do ScrollView, pode remover o paddingTop: 0 aqui também
+        paddingBottom: 80, 
     },
-    title: {
-        fontSize: 25,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    subtitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#4CAF50',
-        marginBottom: 10,
-        marginTop: 10,
-    },
-    chartSection: {
+    
+    // 🚀 NOVO ESTILO: Card para o Gráfico (Soft UI Consistente)
+    chartCard: {
         backgroundColor: '#fff',
-        borderRadius: 12,
-        marginBottom: 20,
+        borderRadius: 16, // Mais suave e consistente com Soft UI
+        marginBottom: 25,
+        padding: 15, // Padding ligeiramente menor no card para compensar o padding do container
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-        alignItems: 'center',
-        paddingVertical: 10,
+        shadowOpacity: 0.08, // Sombra sutil
+        shadowRadius: 8, // Sombra espalhada
+        elevation: 5,
+        alignItems: 'center', // Centraliza o gráfico dentro do card
     },
+    // ✅ NOVO: Título dentro do Card (em destaque)
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#4CAF50', // Destaque na cor primária
+        marginBottom: 10,
+        alignSelf: 'flex-start', // Alinha o título à esquerda
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#eee',
+        paddingBottom: 8,
+        width: '100%', // Linha se estende por toda a largura
+        paddingHorizontal: 5, // Espaçamento interno
+    },
+    tipText: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        marginTop: 10,
+        fontStyle: 'italic',
+        paddingHorizontal: 20,
+    }
 });

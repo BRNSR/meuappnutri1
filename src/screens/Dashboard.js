@@ -12,6 +12,8 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../services/firebaseConfig";
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 
 export default function Dashboard({ navigation }) {
@@ -54,7 +56,7 @@ export default function Dashboard({ navigation }) {
 
     if (loading) {
         return (
-                 <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+             <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
                 <ActivityIndicator size="large" color="#4CAF50" />
                 <Text style={{ marginTop: 10 }}>Carregando dados...</Text>
             </View>
@@ -91,85 +93,106 @@ export default function Dashboard({ navigation }) {
     };
 
     return (
-        // ✅ A principal mudança: 'contentContainerStyle'
         <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Meu Dashboard</Text>
+            <Text style={styles.title}>Painel do Perfil</Text>
+
+            {/* SEÇÃO 1: METAS DE DESTAQUE */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Resumo do seu Plano</Text>
-                <Text style={styles.infoText}>
-                    Objetivo: <Text style={styles.boldText}>{objetivoTexto(objetivo)}</Text>
-                </Text>
-                <Text style={styles.infoText}>
-                    Meta de Peso: <Text style={styles.boldText}>{metaPeso} kg</Text>
-                </Text>
-                <Text style={styles.infoText}>
-                    Meta Calórica Diária:{" "}
-                    <Text style={styles.boldText}>{metaCalorica.toFixed(0)} kcal</Text>
-                </Text>
+                <Text style={styles.sectionTitle}>Minhas Metas</Text>
+                
+                <View style={styles.goalRow}>
+                    {/* Meta Calórica */}
+                    <View style={[styles.goalBox, { backgroundColor: '#e8f5e9' }]}>
+                        <Ionicons name="flame-outline" size={30} color="#4CAF50" />
+                        <Text style={styles.goalValue}>{metaCalorica.toFixed(0)}</Text>
+                        <Text style={styles.goalLabel}>Kcal Diárias</Text>
+                    </View>
+                    
+                    {/* Meta de Peso */}
+                    <View style={[styles.goalBox, { backgroundColor: '#f0e8f5' }]}>
+                        <MaterialCommunityIcons name="target" size={30} color="#8A2BE2" />
+                        <Text style={styles.goalValue}>{metaPeso} kg</Text>
+                        <Text style={styles.goalLabel}>Meta de Peso</Text>
+                    </View>
+                </View>
+
+                {/* Objetivo Principal */}
+                <View style={styles.infoRow}>
+                    <Ionicons name="bulb-outline" size={20} color="#333" />
+                    <Text style={styles.infoTextClean}>
+                        Objetivo Principal: <Text style={styles.boldText}>{objetivoTexto(objetivo)}</Text>
+                    </Text>
+                </View>
             </View>
 
+            {/* SEÇÃO 2: ESTATÍSTICAS E AÇÃO DE PESO */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Estatísticas do Corpo</Text>
+                
                 <View style={styles.statRow}>
-                    <View style={styles.statBox}>
+                    {/* Peso Atual */}
+                    <View style={styles.statBoxClean}>
                         <Text style={styles.statTitle}>Peso Atual</Text>
-                        <Text style={styles.statValue}>
+                        <Text style={styles.statValueClean}>
                             {perfil.peso ? `${perfil.peso.toFixed(1)} kg` : "N/A"}
                         </Text>
                     </View>
-                    <View style={styles.statBox}>
+                    
+                    {/* IMC */}
+                    <View style={styles.statBoxClean}>
                         <Text style={styles.statTitle}>IMC</Text>
-                        <Text style={styles.statValue}>{imc ? imc.toFixed(2) : 'N/A'}</Text>
+                        <Text style={styles.statValueClean}>{imc ? imc.toFixed(2) : 'N/A'}</Text>
                         <Text style={styles.statLabel}>{imcStatus(imc)}</Text>
                     </View>
                 </View>
+                
+                {/* Botão de Adicionar Peso (Destaque e Localizado) */}
                 <TouchableOpacity
-                    style={[styles.actionButton, styles.smallButton]}
+                    style={styles.actionButtonSmall}
                     onPress={() => navigation.navigate("AddWeight")}
                 >
-                    <Text style={[styles.actionButtonText, styles.smallButtonText]}>Adicionar Peso de Hoje</Text>
+                    <Ionicons name="create-outline" size={20} color="#fff" />
+                    <Text style={styles.actionButtonTextSmall}>Registrar Peso de Hoje</Text>
                 </TouchableOpacity>
             </View>
 
+            {/* SEÇÃO 3: CÁLCULOS NUTRICIONAIS */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Cálculos Nutricionais</Text>
+                <Text style={styles.sectionTitle}>Cálculos Nutricionais (Referência)</Text>
                 <View style={styles.statRow}>
-                    <View style={styles.statBox}>
+                    {/* TMB */}
+                    <View style={styles.statBoxClean}>
                         <Text style={styles.statTitle}>TMB</Text>
-                        <Text style={styles.statValue}>{tmb ? `${tmb.toFixed(0)} kcal` : 'N/A'}</Text>
-                        <Text style={styles.statLabel}>Taxa Metabólica Basal</Text>
+                        <Text style={styles.statValueClean}>{tmb ? `${tmb.toFixed(0)} kcal` : 'N/A'}</Text>
+                        <Text style={styles.statLabel}>Metabólica Basal</Text>
                     </View>
-                    <View style={styles.statBox}>
+                    {/* GCD */}
+                    <View style={styles.statBoxClean}>
                         <Text style={styles.statTitle}>GCD</Text>
-                        <Text style={styles.statValue}>{gcd ? `${gcd.toFixed(0)} kcal` : 'N/A'}</Text>
-                        <Text style={styles.statLabel}>Gasto Calórico Diário</Text>
+                        <Text style={styles.statValueClean}>{gcd ? `${gcd.toFixed(0)} kcal` : 'N/A'}</Text>
+                        <Text style={styles.statLabel}>Gasto Diário Total</Text>
                     </View>
                 </View>
             </View>
 
+            {/* AÇÃO DE CONFIGURAÇÃO (Fundo da tela) */}
             <TouchableOpacity
-                style={styles.actionButton}
+                style={styles.configButton}
                 onPress={() => navigation.navigate("ProfileData")}
             >
-                <Text style={styles.actionButtonText}>Atualizar Perfil e Metas</Text>
+                <Ionicons name="settings-outline" size={20} color="#333" />
+                <Text style={styles.configButtonText}>Editar Dados do Perfil e Metas</Text>
             </TouchableOpacity>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    // ✅ Estilo para o conteúdo, não para o ScrollView
     container: {
-        flexGrow: 1, // Permite que o conteúdo se expanda para ocupar a tela
-        backgroundColor: "#f0f4f7",
+        flexGrow: 1,
+        backgroundColor: "#f0f4f7", // Fundo cinza claro
         padding: 20,
-        paddingBottom: 80, // A solução para a rolagem
-    },
-    noProfileContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
+        paddingBottom: 80, 
     },
     loadingContainer: {
         flex: 1,
@@ -177,58 +200,100 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     title: {
-        fontSize: 25,
+        fontSize: 22, // Um pouco menor para dar espaço
         fontWeight: "bold",
         color: "#333",
         marginBottom: 20,
         textAlign: "center",
     },
+    // 🚀 Soft UI Style
     section: {
         backgroundColor: "#fff",
-        borderRadius: 12,
+        borderRadius: 16, // Mais suave
         padding: 20,
-        marginBottom: 20,
+        marginBottom: 25,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
+        shadowOpacity: 0.08, // Sombra sutil
+        shadowRadius: 8, // Sombra espalhada
+        elevation: 5,
     },
     sectionTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "bold",
         color: "#4CAF50",
         marginBottom: 15,
-    },
-    infoText: {
-        fontSize: 16,
-        color: "#555",
-        marginBottom: 5,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#eee',
+        paddingBottom: 10,
     },
     boldText: {
         fontWeight: "bold",
+        color: "#333",
     },
-    statRow: {
+    
+    // --- ESTILOS DE DESTAQUE DE METAS ---
+    goalRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginHorizontal: -5,
+        marginBottom: 15,
     },
-    statBox: {
+    goalBox: {
         flex: 1,
         alignItems: "center",
         padding: 15,
-        backgroundColor: "#e8f5e9",
-        borderRadius: 10,
+        borderRadius: 12,
         marginHorizontal: 5,
+    },
+    goalValue: {
+        fontSize: 26,
+        fontWeight: "bold",
+        color: "#333",
+        marginTop: 5,
+    },
+    goalLabel: {
+        fontSize: 14,
+        color: "#666",
+        textAlign: "center",
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        borderRadius: 8,
+        backgroundColor: '#f9f9f9',
+        marginTop: 10,
+    },
+    infoTextClean: {
+        fontSize: 15,
+        color: "#555",
+        marginLeft: 8,
+    },
+
+    // --- ESTILOS DE ESTATÍSTICAS LIMPAS ---
+    statRow: {
+        flexDirection: "row",
+        justifyContent: "space-around",
+        marginBottom: 10,
+    },
+    statBoxClean: {
+        flex: 1,
+        alignItems: "center",
+        padding: 15,
+        marginHorizontal: 5,
+        borderRadius: 10,
+        backgroundColor: '#fff', // Fundo branco dentro do card branco
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: '#eee', // Borda sutil para separar
     },
     statTitle: {
         fontSize: 14,
         color: "#666",
-        marginBottom: 5,
+        marginBottom: 3,
         textAlign: "center",
     },
-    statValue: {
-        fontSize: 24,
+    statValueClean: {
+        fontSize: 20, // Um pouco menor que as metas
         fontWeight: "bold",
         color: "#333",
     },
@@ -238,13 +303,54 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginTop: 5,
     },
+    
+    // --- BOTÕES DE AÇÃO ---
+    actionButtonSmall: {
+        backgroundColor: "#4CAF50",
+        padding: 10,
+        borderRadius: 8,
+        alignItems: "center",
+        marginTop: 15,
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    actionButtonTextSmall: {
+        color: "#fff",
+        fontSize: 16,
+        fontWeight: "bold",
+        marginLeft: 8,
+    },
+    configButton: {
+        padding: 10,
+        borderRadius: 8,
+        alignItems: "center",
+        marginTop: 10,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        backgroundColor: '#fff',
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: '#ccc',
+    },
+    configButtonText: {
+        color: "#333",
+        fontSize: 16,
+        marginLeft: 8,
+    },
+    // Estilos para telas vazias/erro (mantidos)
+    noProfileContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
+    },
     noDataText: {
         fontSize: 18,
         color: "#666",
         textAlign: "center",
         marginTop: 50,
     },
-    actionButton: {
+    // Mantido apenas para a tela de 'no profile'
+    actionButton: { 
         backgroundColor: "#4CAF50",
         padding: 15,
         borderRadius: 10,
@@ -255,12 +361,5 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontSize: 18,
         fontWeight: "bold",
-    },
-    smallButton: {
-        padding: 12,
-        borderRadius: 8,
-    },
-    smallButtonText: {
-        fontSize: 16,
     },
 });
