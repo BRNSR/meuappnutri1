@@ -1,3 +1,5 @@
+// Home.js
+
 import React, { useState, useEffect } from "react";
 import {
     View,
@@ -9,8 +11,14 @@ import {
     Alert,
     ScrollView,
 } from "react-native";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
-import { auth, db } from "../services/firebaseConfig";
+// IMPORTAÇÕES DO FIREBASE FORAM REMOVIDAS, EXCETO AUTH
+// import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { auth } from "../services/firebaseConfig"; // Mantém auth para pegar o UID
+import { 
+    subscribeToProfile, 
+    subscribeToDailyLog, 
+    saveDailyLog 
+} from "../services/firestoreService"; // ✅ Novas importações modulares
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
@@ -33,7 +41,6 @@ const refeicoesIniciais = [
 export default function Home({ navigation }) {
     const insets = useSafeAreaInsets();
     
-    // O estado agora é o que controla a data que está sendo exibida
     const [dataAtual, setDataAtual] = useState(new Date()); 
     const [refeicoes, setRefeicoes] = useState(refeicoesIniciais);
     const [loading, setLoading] = useState(true);
@@ -46,48 +53,44 @@ export default function Home({ navigation }) {
             return;
         }
 
-        const perfilRef = doc(db, "users", userId, "profile", "data");
-        const unsubPerfil = onSnapshot(perfilRef, (docSnap) => {
-            if (docSnap.exists() && docSnap.data().metaCalorica) {
+        // 1. ASSINATURA DO PERFIL (META CALÓRICA)
+        // Usa a função modularizada do firestoreService
+        const unsubPerfil = subscribeToProfile(userId, (docSnap) => {
+            if (docSnap && docSnap.exists() && docSnap.data().metaCalorica) {
+                // Seu caminho de dados original: profile -> data -> metaCalorica
                 setMetaCalorica(docSnap.data().metaCalorica);
             } else {
                 setMetaCalorica(0);
             }
         });
 
+        // 2. ASSINATURA DO DAILY LOG (Refeições do dia)
         const dataString = format(dataAtual, "yyyy-MM-dd");
-        const dailyLogRef = doc(db, "users", userId, "dailyLog", dataString);
-
-        const unsubscribe = onSnapshot(
-            dailyLogRef,
-            (docSnap) => {
-                if (docSnap.exists()) {
+        
+        // Usa a função modularizada do firestoreService
+        const unsubscribe = subscribeToDailyLog(userId, dataString, (docSnap) => {
+            if (docSnap) { // Verifica se docSnap não é null (erro no listener)
+                 if (docSnap.exists()) {
                     const dadosSalvos = docSnap.data().refeicoes;
                     setRefeicoes(dadosSalvos);
                 } else {
-                    setDoc(dailyLogRef, {
+                    // Se o documento DailyLog para esta data não existe, cria-o no banco
+                    saveDailyLog(userId, dataString, {
                         refeicoes: refeicoesIniciais,
                         totais: { kcal: 0, prot: 0, carb: 0, gord: 0 },
-                    }, { merge: true });
+                    });
                     setRefeicoes(refeicoesIniciais);
                 }
-                setLoading(false);
-            },
-            (error) => {
-                console.error("Erro no listener do Firestore: ", error);
-                Alert.alert(
-                    "Erro",
-                    "Falha ao carregar dados. Verifique sua conexão e permissões."
-                );
-                setLoading(false);
             }
-        );
+            setLoading(false);
+        });
 
+        // Cleanup function para cancelar as assinaturas
         return () => {
             unsubscribe();
             unsubPerfil();
         };
-    }, [userId, dataAtual]);
+    }, [userId, dataAtual]); // Re-executa se o usuário ou a data mudar
 
     const adicionarAlimento = (refeicaoId, alimento) => {
         const novasRefeicoes = refeicoes.map((r) =>
@@ -108,10 +111,10 @@ export default function Home({ navigation }) {
         salvarRefeicoes(novasRefeicoes);
     };
 
+    // Função para salvar no Firestore (usa saveDailyLog do firestoreService)
     const salvarRefeicoes = async (novasRefeicoes) => {
         if (!userId) return;
         const dataString = format(dataAtual, "yyyy-MM-dd");
-        const docRef = doc(db, "users", userId, "dailyLog", dataString);
 
         const todosOsAlimentos = novasRefeicoes.flatMap(refeicao => refeicao.alimentos);
         
@@ -125,8 +128,11 @@ export default function Home({ navigation }) {
             { kcal: 0, prot: 0, carb: 0, gord: 0 }
         );
 
+        const dataToSave = { refeicoes: novasRefeicoes, totais };
+
         try {
-            await setDoc(docRef, { refeicoes: novasRefeicoes, totais }, { merge: true });
+            // ✅ Usa a função modularizada
+            await saveDailyLog(userId, dataString, dataToSave); 
         } catch (e) {
             console.error("Erro ao salvar dados: ", e);
             Alert.alert("Erro", "Não foi possível salvar os dados. Tente novamente.");
@@ -175,12 +181,10 @@ export default function Home({ navigation }) {
 
     return (
         <ScrollView 
-            // 💡 AJUSTE AQUI: Remove o paddingTop do style e aplica no contentContainerStyle
             style={styles.scrollView} 
             contentContainerStyle={[
                 styles.container, 
-                // ✅ Aplica o insets.top (safe area) + uma margem extra (ex: 15px) para respirar
-                { paddingTop: insets.top + 5 } 
+                { paddingTop: insets.top + -10 } 
             ]}
         >
             {/* BLOCO: Seleção de data */}
@@ -250,6 +254,7 @@ export default function Home({ navigation }) {
             <FlatList
                 data={refeicoes}
                 keyExtractor={(item) => item.id.toString()}
+                scrollEnabled={false} // Para funcionar dentro do ScrollView
                 renderItem={({ item }) => {
                     const totais = calcularTotais(item.alimentos);
                     return (
@@ -309,7 +314,6 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         backgroundColor: "#f0f4f7",
         padding: 15,
-        // ❌ REMOVIDO o `paddingTop` fixo daqui
         paddingBottom: 80,
     },
     loadingContainer: {
@@ -322,8 +326,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 15,
-        // ✅ Ajustado: Removemos o insets.top da ScrollView e aplicamos padding no container,
-        // mantendo o espaçamento superior e o espaço de 15px inferior.
     },
     dateText: {
         fontSize: 25,
@@ -331,25 +333,17 @@ const styles = StyleSheet.create({
         color: "#333",
         textAlign: "center",
     },
-    // 🚀 ESTILO MODERNO: Card principal com bordas mais suaves e sombra sutil
     card: {
         backgroundColor: "#fff",
-        borderRadius: 16, // Aumentado para 16
+        borderRadius: 16, 
         padding: 20,
         marginBottom: 20,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08, // Reduzido drasticamente
-        shadowRadius: 8, // Aumentado o raio
+        shadowOpacity: 0.08, 
+        shadowRadius: 8, 
         elevation: 5,
         alignItems: "center",
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#4CAF50",
-        marginBottom: 15,
-        textAlign: "center",
     },
     kcalChart: {
         marginBottom: 15,
@@ -418,16 +412,15 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
     },
-    // 🚀 ESTILO MODERNO: Cards de Refeição com bordas mais suaves e sombra sutil
     mealCard: {
         backgroundColor: "#fff",
-        borderRadius: 16, // Aumentado para 16
+        borderRadius: 16, 
         padding: 20,
         marginBottom: 20,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08, // Reduzido drasticamente
-        shadowRadius: 8, // Aumentado o raio
+        shadowOpacity: 0.08, 
+        shadowRadius: 8, 
         elevation: 5,
     },
     refeicaoHeader: {

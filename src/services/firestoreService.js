@@ -1,87 +1,277 @@
-import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, getDoc, deleteDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { initializeApp } from 'firebase/app';
+// firestoreService.js
 
-// Variáveis globais de configuração do Firebase, fornecidas pelo ambiente.
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+import { 
+    getFirestore, 
+    collection, 
+    doc, 
+    addDoc, 
+    setDoc, 
+    deleteDoc, 
+    query, 
+    where, 
+    orderBy, 
+    onSnapshot,
+    getDocs,
+    writeBatch,
+    serverTimestamp // Importado para uso ideal de data/hora
+} from 'firebase/firestore';
 
-// Inicializa o Firebase
-const app = initializeApp(firebaseConfig);
+// ✅ CORREÇÃO: Importa 'app' do seu arquivo de configuração
+import { app } from './firebaseConfig'; 
+
 const db = getFirestore(app);
-const auth = getAuth(app);
 
-// Assina o token de autenticação inicial para login automático.
-// Se o token não for fornecido, faz login anônimo.
-if (initialAuthToken) {
-  auth.signInWithCustomToken(initialAuthToken).catch(console.error);
-} else {
-  auth.signInAnonymously().catch(console.error);
+// =========================================================
+// 1. REFERÊNCIAS DE COLEÇÕES
+// =========================================================
+
+const getExerciciosCollectionRef = (userId) => {
+    return collection(db, 'users', userId, 'exercicios');
+};
+
+const getDailyLogDocRef = (userId, dataString) => {
+    return doc(db, 'users', userId, 'Diario', dataString);
+};
+
+const getProfileDocRef = (userId) => {
+    return doc(db, 'users', userId, 'profile', 'data'); 
+};
+
+// Mantendo 'HistoricoDePeso' para consistência com seus dados
+const getWeightHistoryCollectionRef = (userId) => {
+    return collection(db, 'users', userId, 'HistoricoDePeso');
+};
+
+const getReceitasCollectionRef = (userId) => {
+    return collection(db, 'users', userId, 'receitas');
+};
+
+
+// =========================================================
+// 2. FUNÇÕES CRUD: EXERCÍCIOS
+// =========================================================
+
+export async function saveExercicio(userId, exercicioData) {
+    if (!userId) throw new Error("UserID é obrigatório.");
+    try {
+        await addDoc(getExerciciosCollectionRef(userId), {
+            ...exercicioData,
+            // ✅ MELHORIA: Usando serverTimestamp()
+            createdAt: serverTimestamp() 
+        });
+    } catch (error) {
+        console.error("Erro ao salvar exercício:", error);
+        throw error;
+    }
 }
 
-/**
- * Salva uma nova receita para o usuário atual.
- * @param {object} recipe A receita a ser salva.
- * @returns {Promise<string>} O ID da receita salva.
- */
-export const saveRecipe = async (recipe) => {
-  try {
-    const userId = auth.currentUser?.uid || 'anonymous';
-    // O caminho do documento é público para ser compartilhado
-    const docPath = `/artifacts/${appId}/public/data/recipes`;
+export async function deleteExercicio(userId, exercicioId) {
+    if (!userId || !exercicioId) throw new Error("UserID e Exercício ID são obrigatórios.");
+    try {
+        const docRef = doc(getExerciciosCollectionRef(userId), exercicioId);
+        await deleteDoc(docRef);
+    } catch (error) {
+        console.error("Erro ao deletar exercício:", error);
+        throw error;
+    }
+}
+
+export function subscribeToExercicios(userId, diaDaSemana, callback) {
+    if (!userId) return () => {};
+
+    const q = query(
+        getExerciciosCollectionRef(userId),
+        where("day", "==", diaDaSemana),
+        orderBy("createdAt", "desc") 
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const exerciciosList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        callback(exerciciosList);
+    }, (error) => {
+        console.error("Erro ao receber snapshot dos exercícios:", error);
+        callback([]);
+    });
+
+    return unsubscribe;
+}
+
+export async function deleteAllExercicios(userId) {
+    if (!userId) throw new Error("UserID é obrigatório.");
     
-    // Adiciona o userId e o appId à receita antes de salvar
-    const recipeData = {
-      ...recipe,
-      userId: userId,
-      appId: appId,
-      createdAt: new Date().toISOString()
+    try {
+        const exerciciosRef = getExerciciosCollectionRef(userId);
+        const snapshot = await getDocs(exerciciosRef);
+        
+        const batch = writeBatch(db); 
+
+        snapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+    } catch (error) {
+        console.error("Erro ao apagar todos os exercícios:", error);
+        throw error;
+    }
+}
+
+
+// =========================================================
+// 3. FUNÇÕES CRUD: DAILY LOG
+// =========================================================
+
+export async function saveDailyLog(userId, dataString, dataToSave) {
+    if (!userId) throw new Error("UserID é obrigatório.");
+    try {
+        const docRef = getDailyLogDocRef(userId, dataString);
+        await setDoc(docRef, dataToSave, { merge: true });
+    } catch (error) {
+        console.error("Erro ao salvar DailyLog:", error);
+        throw error;
+    }
+}
+
+export function subscribeToDailyLog(userId, dataString, callback) {
+    if (!userId) return () => {};
+
+    const docRef = getDailyLogDocRef(userId, dataString);
+
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+        callback(docSnap); 
+    }, (error) => {
+        console.error("Erro ao receber snapshot do DailyLog:", error);
+        callback(null); 
+    });
+
+    return unsubscribe;
+}
+
+// =========================================================
+// 4. FUNÇÕES CRUD: PROFILE
+// =========================================================
+
+export async function saveProfile(userId, profileData) {
+    if (!userId) throw new Error("UserID é obrigatório.");
+    try {
+        const docRef = getProfileDocRef(userId);
+        await setDoc(docRef, { 
+            ...profileData, 
+            // ✅ MELHORIA: Usando serverTimestamp() para o último update
+            lastUpdated: serverTimestamp() 
+        }, { merge: true });
+    } catch (error) {
+        console.error("Erro ao salvar Profile:", error);
+        throw error;
+    }
+}
+
+export function subscribeToProfile(userId, callback) {
+    if (!userId) return () => {};
+
+    const perfilRef = getProfileDocRef(userId);
+    
+    const unsubscribe = onSnapshot(perfilRef, (docSnap) => {
+        callback(docSnap); 
+    }, (error) => {
+        console.error("Erro ao receber snapshot do Perfil:", error);
+        callback(null); 
+    });
+
+    return unsubscribe;
+}
+
+// =========================================================
+// 5. FUNÇÕES CRUD: WEIGHT HISTORY
+// =========================================================
+
+export async function addWeightEntry(userId, weightData) {
+    if (!userId) throw new Error("UserID é obrigatório.");
+    try {
+        const weightRef = getWeightHistoryCollectionRef(userId);
+        await addDoc(weightRef, { 
+            ...weightData, 
+            // ✅ MELHORIA: Usando serverTimestamp()
+            createdAt: serverTimestamp() 
+        });
+    } catch (error) {
+        console.error("Erro ao adicionar entrada de peso:", error);
+        throw error;
+    }
+}
+
+export function subscribeToWeightHistory(userId, callback) {
+    if (!userId) return () => {};
+
+    const q = query(
+        getWeightHistoryCollectionRef(userId),
+        orderBy("createdAt", "desc") 
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const historyList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        callback(historyList);
+    }, (error) => {
+        console.error("Erro ao receber snapshot do Histórico de Peso:", error);
+        callback([]);
+    });
+
+    return unsubscribe;
+}
+
+// =========================================================
+// 6. 🍲 FUNÇÕES CRUD: RECEITAS
+// =========================================================
+
+export async function saveReceita(userId, receitaData) {
+    if (!userId) throw new Error("UserID é obrigatório.");
+    if (!receitaData.id) throw new Error("Receita ID (uuid) é obrigatório.");
+    
+    const docId = receitaData.id; 
+    
+    const { id, ...dataToSave } = receitaData; 
+
+    const dataWithTimestamp = {
+        ...dataToSave,
+        createdAt: serverTimestamp() 
     };
 
-    const docRef = await addDoc(collection(db, docPath), recipeData);
-    console.log("Receita salva com o ID: ", docRef.id);
-    return docRef.id;
-  } catch (error) {
-    console.error("Erro ao salvar a receita:", error);
-    throw error;
-  }
-};
+    try {
+        await setDoc(doc(getReceitasCollectionRef(userId), docId), dataWithTimestamp);
+    } catch (error) {
+        console.error("Erro ao salvar receita:", error);
+        throw error;
+    }
+}
 
-/**
- * Obtém as receitas de um usuário específico e monitora mudanças em tempo real.
- * @param {string} userId O ID do usuário.
- * @param {function} callback A função a ser chamada com a lista de receitas atualizada.
- * @returns {function} Uma função para desinscrever o listener.
- */
-export const subscribeToRecipes = (userId, callback) => {
-  const docPath = `/artifacts/${appId}/public/data/recipes`;
-  const q = query(collection(db, docPath), where("userId", "==", userId));
-  
-  const unsubscribe = onSnapshot(q, (querySnapshot) => {
-    const recipes = [];
-    querySnapshot.forEach((doc) => {
-      recipes.push({ id: doc.id, ...doc.data() });
+export async function deleteReceita(userId, receitaId) {
+    if (!userId || !receitaId) throw new Error("UserID e Receita ID são obrigatórios.");
+    try {
+        await deleteDoc(doc(getReceitasCollectionRef(userId), receitaId));
+    } catch (error) {
+        console.error("Erro ao deletar receita:", error);
+        throw error;
+    }
+}
+
+export function subscribeToReceitas(userId, callback) {
+    if (!userId) return () => {}; 
+    
+    const q = query(
+        getReceitasCollectionRef(userId),
+        orderBy("createdAt", "desc") 
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const receitasList = snapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data() 
+        }));
+        callback(receitasList);
+    }, (error) => {
+        console.error("Erro ao receber snapshot das receitas:", error);
+        callback([]);
     });
-    callback(recipes);
-  }, (error) => {
-    console.error("Erro ao obter receitas:", error);
-  });
 
-  return unsubscribe;
-};
-
-/**
- * Deleta uma receita do Firestore.
- * @param {string} recipeId O ID da receita a ser deletada.
- */
-export const deleteRecipe = async (recipeId) => {
-  try {
-    const docPath = `/artifacts/${appId}/public/data/recipes/${recipeId}`;
-    await deleteDoc(doc(db, docPath));
-    console.log("Receita deletada com o ID: ", recipeId);
-  } catch (error) {
-    console.error("Erro ao deletar a receita:", error);
-    throw error;
-  }
-};
+    return unsubscribe;
+}

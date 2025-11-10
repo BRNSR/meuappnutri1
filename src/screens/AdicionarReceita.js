@@ -1,3 +1,5 @@
+// screens/AdicionarReceita.js
+
 import React, { useState } from 'react';
 import {
     View,
@@ -12,12 +14,11 @@ import {
     ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth } from 'firebase/auth'; // Importa Auth para pegar o ID do usuário
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
-const RECEITAS_KEY = '@receitas_usuario';
+import { saveReceita } from '../services/firestoreService'; // Importa a função do Firebase
 
 export default function AdicionarReceita({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -30,17 +31,25 @@ export default function AdicionarReceita({ navigation }) {
     const [preparo, setPreparo] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // Obtém o ID do usuário logado
+    const auth = getAuth();
+    const userId = auth.currentUser?.uid;
+
     const handleSalvarReceita = async () => {
-        // Validação básica dos campos
+        if (!userId) {
+            Alert.alert("Erro de Autenticação", "Usuário não logado. Faça login para adicionar receitas.");
+            return;
+        }
         if (!nome || !kcal || !prot || !carb || !gord || !ingredientes || !preparo) {
             Alert.alert("Erro", "Por favor, preencha todos os campos.");
             return;
         }
 
-        const numericKcal = parseFloat(kcal);
-        const numericProt = parseFloat(prot);
-        const numericCarb = parseFloat(carb);
-        const numericGord = parseFloat(gord);
+        // Garante que a vírgula é convertida para ponto para parseFloat
+        const numericKcal = parseFloat(kcal.replace(',', '.'));
+        const numericProt = parseFloat(prot.replace(',', '.'));
+        const numericCarb = parseFloat(carb.replace(',', '.'));
+        const numericGord = parseFloat(gord.replace(',', '.'));
 
         if (isNaN(numericKcal) || isNaN(numericProt) || isNaN(numericCarb) || isNaN(numericGord)) {
             Alert.alert("Erro", "Os valores de calorias e macros devem ser números válidos.");
@@ -50,46 +59,38 @@ export default function AdicionarReceita({ navigation }) {
         setLoading(true);
 
         const novaReceita = {
-            id: uuidv4(), // 👈 Adiciona um ID único para a nova receita
+            id: uuidv4(), // ID único para ser o ID do documento no Firestore
             nome,
             kcal: numericKcal,
             prot: numericProt,
             carb: numericCarb,
             gord: numericGord,
-            ingredientes: ingredientes.split('\n'),
+            // Separa ingredientes por linha, removendo linhas vazias
+            ingredientes: ingredientes.split('\n').filter(i => i.trim() !== ''), 
             preparo,
         };
 
         try {
-            // Pega as receitas existentes do AsyncStorage
-            const receitasSalvas = await AsyncStorage.getItem(RECEITAS_KEY);
-            const receitasExistentes = receitasSalvas ? JSON.parse(receitasSalvas) : [];
-
-            // Adiciona a nova receita à lista existente
-            const novaListaDeReceitas = [...receitasExistentes, novaReceita];
-
-            // Salva a lista atualizada de volta no AsyncStorage
-            await AsyncStorage.setItem(RECEITAS_KEY, JSON.stringify(novaListaDeReceitas));
+            await saveReceita(userId, novaReceita); 
 
             setLoading(false);
-            Alert.alert("Sucesso!", `A receita "${nome}" foi adicionada.`);
-            navigation.goBack(); // Volta para a tela anterior
+            Alert.alert("Sucesso!", `A receita "${nome}" foi adicionada ao Firebase.`);
+            navigation.goBack(); 
         } catch (error) {
             setLoading(false);
-            Alert.alert("Erro", "Não foi possível salvar a receita. Tente novamente.");
-            console.error("Erro ao salvar receita:", error);
+            Alert.alert("Erro", "Não foi possível salvar a receita no Firebase. Tente novamente.");
+            console.error("Erro ao salvar receita no Firebase:", error);
         }
     };
 
     return (
         <KeyboardAvoidingView
-            style={[styles.container,]}
+            style={[styles.container, { paddingTop: insets.top }]} 
             behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
                 <Text style={styles.title}>Adicionar Receita</Text>
                 
-                {/* Campos da receita */}
                 <Text style={styles.label}>Nome da Receita</Text>
                 <TextInput
                     style={styles.input}
@@ -165,60 +166,14 @@ export default function AdicionarReceita({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f0f4f7',
-    },
-    scrollViewContent: {
-        padding: 20,
-        paddingBottom: 40,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#555',
-        marginBottom: 5,
-        marginTop: 10,
-    },
-    input: {
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 15,
-        fontSize: 16,
-    },
-    macrosContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-    },
-    macroInput: {
-        width: '23%',
-    },
-    textArea: {
-        minHeight: 100,
-        textAlignVertical: 'top',
-    },
-    saveButton: {
-        backgroundColor: '#4CAF50',
-        padding: 15,
-        borderRadius: 10,
-        alignItems: 'center',
-        marginTop: 20,
-        elevation: 5,
-    },
-    saveButtonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
+    container: { flex: 1, backgroundColor: '#f0f4f7' },
+    scrollViewContent: { padding: 20, paddingBottom: 40 },
+    title: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 20, textAlign: 'center' },
+    label: { fontSize: 16, fontWeight: 'bold', color: '#555', marginBottom: 5, marginTop: 10 },
+    input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, marginBottom: 15, fontSize: 16 },
+    macrosContainer: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
+    macroInput: { width: '23%' },
+    textArea: { minHeight: 100, textAlignVertical: 'top' },
+    saveButton: { backgroundColor: '#4CAF50', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 20, elevation: 5 },
+    saveButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 });

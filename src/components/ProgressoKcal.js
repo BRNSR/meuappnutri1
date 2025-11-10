@@ -1,3 +1,4 @@
+// ProgressoKcal.js
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Alert, TouchableOpacity, FlatList } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
@@ -23,7 +24,10 @@ export default function CalorieProgressChart() {
         }
 
         setLoading(true);
-        const q = query(collection(db, "users", userId, "dailyLog"), orderBy("__name__", "asc"));
+        
+        // ✅ CORREÇÃO: Usando 'Diario' (D maiúsculo) para a coleção de logs
+        const q = query(collection(db, "users", userId, "Diario"), orderBy("__name__", "asc")); 
+        
         const unsubscribeCalories = onSnapshot(q, (snapshot) => {
             const history = [];
             snapshot.forEach(doc => {
@@ -44,6 +48,7 @@ export default function CalorieProgressChart() {
             setLoading(false);
         });
 
+        // ✅ CORREÇÃO: Usando 'Diario' (D maiúsculo) na referência de exclusão
         const perfilRef = doc(db, "users", userId, "profile", "data");
         const unsubscribePerfil = onSnapshot(perfilRef, (docSnap) => {
             if (docSnap.exists()) {
@@ -60,7 +65,7 @@ export default function CalorieProgressChart() {
         };
     }, [userId]);
 
-    const handleDeleteCalorieRecord = (docId) => {
+    const handleDeleteCalorieRecord = async (docId) => {
         Alert.alert(
             "Confirmar Exclusão",
             "Tem certeza que deseja deletar este registro de calorias?",
@@ -74,7 +79,8 @@ export default function CalorieProgressChart() {
                                 Alert.alert("Erro", "Usuário não autenticado.");
                                 return;
                             }
-                            const docRef = doc(db, "users", userId, "dailyLog", docId);
+                            // ✅ CORREÇÃO: Usando 'Diario' (D maiúsculo)
+                            const docRef = doc(db, "users", userId, "Diario", docId); 
                             await deleteDoc(docRef);
                             Alert.alert("Sucesso", "Registro de calorias deletado.");
                         } catch (error) {
@@ -97,6 +103,14 @@ export default function CalorieProgressChart() {
         );
     }
 
+    if (!userId) {
+         return (
+             <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>Você precisa estar logado para ver o progresso.</Text>
+            </View>
+        );
+    }
+    
     if (calorieHistory.length === 0) {
         return (
             <View style={styles.noDataContainer}>
@@ -110,9 +124,9 @@ export default function CalorieProgressChart() {
     const historyForChart = calorieHistory.slice(-periodLimit);
 
     const labels = historyForChart.map(entry => {
-        const dateObj = new Date(entry.data);
+        // Assume que 'entry.data' é uma string de data (ex: '2025-11-10')
+        const dateObj = new Date(entry.data + 'T00:00:00'); 
         if (selectedPeriod === '7-d') {
-            // Alteração aqui: mostra o número do dia
             return isNaN(dateObj.getTime()) ? '' : format(dateObj, 'd');
         }
         return isNaN(dateObj.getTime()) ? '' : format(dateObj, 'dd/MM');
@@ -161,7 +175,8 @@ export default function CalorieProgressChart() {
     const renderItem = ({ item }) => (
         <View style={styles.tableRow}>
             <Text style={styles.tableCell}>
-                {format(new Date(item.data), "d 'de' MMMM", { locale: ptBR })}
+                {/* Adiciona 'T00:00:00' para garantir que new Date() não use o fuso horário atual incorretamente se for só data */}
+                {format(new Date(item.data + 'T00:00:00'), "d 'de' MMMM", { locale: ptBR })}
             </Text>
             <Text style={styles.tableCell}>{item.kcal.toFixed(0)}</Text>
             <View style={styles.tableCellActions}>
@@ -227,6 +242,7 @@ export default function CalorieProgressChart() {
 }
 
 const styles = StyleSheet.create({
+    // ... (Seus estilos originais)
     container: {
         flex: 1,
         padding: 20,

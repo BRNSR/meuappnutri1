@@ -1,3 +1,5 @@
+// AdicionarPeso.js (Nome da tela: AddWeightScreen)
+
 import React, { useState } from 'react';
 import {
     View,
@@ -8,10 +10,14 @@ import {
     Alert,
     ActivityIndicator,
 } from 'react-native';
-import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+// ❌ REMOVIDO: doc, updateDoc, collection, addDoc
+import { doc, getDoc } from 'firebase/firestore'; // Mantemos getDoc para a leitura única do perfil
 import { auth, db } from '../services/firebaseConfig';
 import { format } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
+// ✅ IMPORTAÇÕES DO SERVIÇO: Usamos as funções modulares
+import { saveProfile, addWeightEntry } from '../services/firestoreService'; 
+
 
 export default function AddWeightScreen({ navigation }) {
     const [peso, setPeso] = useState('');
@@ -42,7 +48,7 @@ export default function AddWeightScreen({ navigation }) {
             const pesoValue = parseFloat(peso);
             const formattedDate = format(date, 'yyyy-MM-dd');
 
-            // 1. Obter os dados atuais do perfil para recalcular as métricas
+            // 1. Obter os dados atuais do perfil (Leitura direta é aceitável aqui)
             const perfilRef = doc(db, 'users', userId, 'profile', 'data');
             const perfilDoc = await getDoc(perfilRef);
             
@@ -55,11 +61,10 @@ export default function AddWeightScreen({ navigation }) {
             const perfilData = perfilDoc.data();
             const { altura, idade, sexo, nivelAtividade, objetivo, metaSemanal } = perfilData;
 
-            // 2. Recalcular todas as métricas com o novo peso
+            // 2. Recalcular todas as métricas com o novo peso (Lógica de cálculo mantida)
             const alturaM = altura / 100;
             const imc = pesoValue / (alturaM * alturaM);
-
-            // Fórmula de Mifflin-St Jeor para TMB
+            
             let tmb;
             if (sexo === 'masculino') {
                 tmb = (10 * pesoValue) + (6.25 * altura) - (5 * idade) + 5;
@@ -74,8 +79,7 @@ export default function AddWeightScreen({ navigation }) {
                 'muito_ativa': 1.725,
             };
             const gcd = tmb * atividadeMultiplicadores[nivelAtividade];
-
-            // Recalcular a meta calórica com o novo GCD
+            
             let metaCalorica = gcd;
             const caloriasPorKg = 7700;
             const metaCaloriasSemanal = metaSemanal * caloriasPorKg;
@@ -87,7 +91,6 @@ export default function AddWeightScreen({ navigation }) {
                 metaCalorica = gcd + ajusteDiario;
             }
 
-            // Aplicar limites de segurança
             const faixaMinima = sexo === 'masculino' ? 1500 : 1200;
             const limiteMaximo = 4000;
 
@@ -98,23 +101,24 @@ export default function AddWeightScreen({ navigation }) {
                 metaCalorica = limiteMaximo;
             }
             
-            // 3. Adicionar o novo peso ao histórico
-            const historicoPesoCollectionRef = collection(db, 'users', userId, 'weightHistory');
-            await addDoc(historicoPesoCollectionRef, {
+            // 3. ✅ Adicionar o novo peso ao histórico usando a função modularizada
+            const weightData = {
                 peso: pesoValue,
                 data: formattedDate,
                 timestamp: new Date().toISOString(),
-            });
+            };
+            await addWeightEntry(userId, weightData); // Usa a função que aponta para 'historicoDePeso'
 
-            // 4. Atualizar o documento 'profile/data' com todas as métricas recalculadas
-            await updateDoc(perfilRef, {
+            // 4. ✅ Atualizar o documento 'profile/data' com todas as métricas recalculadas
+            const profileUpdateData = {
                 peso: pesoValue,
                 imc: imc,
                 tmb: tmb,
                 gcd: gcd,
                 metaCalorica: metaCalorica,
                 ultimaAtualizacaoPeso: new Date().toISOString(),
-            });
+            };
+            await saveProfile(userId, profileUpdateData); // Usa a função que aponta para 'profile/data'
 
             Alert.alert('Sucesso', 'Peso e metas atualizados!');
             navigation.goBack();
@@ -168,6 +172,7 @@ export default function AddWeightScreen({ navigation }) {
     );
 }
 
+// ... Styles permanecem os mesmos ...
 const styles = StyleSheet.create({
     container: {
         flex: 1,

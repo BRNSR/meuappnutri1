@@ -1,3 +1,4 @@
+// ProgressoPeso.js
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Alert, TouchableOpacity, FlatList } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
@@ -24,16 +25,23 @@ export default function WeightProgressChart() {
 
         setLoading(true);
 
-        const q = query(collection(db, "users", userId, "weightHistory"), orderBy("timestamp", "asc"));
+        // ✅ CORREÇÃO: Usando 'HistoricoDePeso' para a coleção de peso
+        const q = query(collection(db, "users", userId, "HistoricoDePeso"), orderBy("timestamp", "asc"));
+        
         const unsubscribeWeight = onSnapshot(q, (snapshot) => {
             const history = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
+                // É CRÍTICO que 'data.timestamp' seja um objeto Timestamp ou Date para ordenação
+                const timestamp = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+
                 history.push({
                     id: doc.id,
                     peso: data.peso,
-                    data: data.data,
-                    timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp),
+                    // O campo 'data' foi removido em favor do uso do timestamp no componente anterior,
+                    // mas vou manter aqui para compatibilidade, assumindo que você salva a data.
+                    data: data.data || timestamp.toISOString(), 
+                    timestamp: timestamp,
                 });
             });
             history.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
@@ -75,7 +83,8 @@ export default function WeightProgressChart() {
                                 Alert.alert("Erro", "Usuário não autenticado.");
                                 return;
                             }
-                            const recordRef = doc(db, "users", userId, "weightHistory", recordId);
+                            // ✅ CORREÇÃO: Usando 'HistoricoDePeso'
+                            const recordRef = doc(db, "users", userId, "HistoricoDePeso", recordId); 
                             await deleteDoc(recordRef);
                             Alert.alert("Sucesso", "Registro de peso deletado.");
                         } catch (error) {
@@ -98,6 +107,14 @@ export default function WeightProgressChart() {
         );
     }
 
+    if (!userId) {
+         return (
+             <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>Você precisa estar logado para ver o progresso.</Text>
+            </View>
+        );
+    }
+    
     if (weightHistory.length === 0) {
         return (
             <View style={styles.noDataContainer}>
@@ -111,9 +128,11 @@ export default function WeightProgressChart() {
     const historyForChart = weightHistory.slice(-periodLimit);
 
     const labels = historyForChart.map(entry => {
-        const dateObj = new Date(entry.data);
+        // Usa o campo 'data' ou o 'timestamp' para formatar
+        const dateString = typeof entry.data === 'string' ? entry.data : entry.timestamp?.toISOString();
+        const dateObj = new Date(dateString);
+        
         if (selectedPeriod === '7-d') {
-            // Alteração aqui: mostra o número do dia
             return isNaN(dateObj.getTime()) ? '' : format(dateObj, 'd');
         }
         return isNaN(dateObj.getTime()) ? '' : format(dateObj, 'dd/MM');
@@ -228,6 +247,7 @@ export default function WeightProgressChart() {
 }
 
 const styles = StyleSheet.create({
+    // ... (Seus estilos originais)
     container: {
         flex: 1,
         padding: 20,

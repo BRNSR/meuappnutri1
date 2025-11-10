@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+// ExerciciosScreen.js (COMPLETO E OTIMIZADO)
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
     View, 
     Text, 
@@ -7,61 +9,77 @@ import {
     ScrollView, 
     Alert,
     FlatList,
+    ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import Ionicons from 'react-native-vector-icons/Ionicons'; 
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useIsFocused } from '@react-navigation/native';
+
+import { getAuth } from 'firebase/auth'; 
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler'; 
 
-// CHAVE EXCLUSIVA para salvar os exercícios no AsyncStorage
-const EXERCICIOS_KEY = '@exercicios_usuario';
+import { 
+    subscribeToExercicios, 
+    deleteExercicio 
+} from '../services/firestoreService'; 
 
-const DIAS_DA_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+// DIAS CURTOS (usados para o filtro e salvamento no Firestore)
+const DIAS_DA_SEMANA_CURTO = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const DIAS_COMPLETO_MAP = {
+    'Dom': 'Domingo', 'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 
+    'Qui': 'Quinta', 'Sex': 'Sexta', 'Sáb': 'Sábado'
+};
 
 export default function ExerciciosScreen({ navigation }) {
     const insets = useSafeAreaInsets();
-    const isFocused = useIsFocused();
+    const auth = getAuth();
     
-    // Calcula o dia da semana atual para iniciar
-    const getDiaInicial = () => {
-        const todayIndex = new Date().getDay(); 
-        // 0 (Dom) a 6 (Sáb). Ajusta para Seg=0 a Dom=6
-        return DIAS_DA_SEMANA[todayIndex === 0 ? 6 : todayIndex - 1]; 
-    };
+    // Função para calcular o dia inicial
+    const getDiaInicialCurto = () => DIAS_DA_SEMANA_CURTO[new Date().getDay()]; 
     
-    const [diaSelecionado, setDiaSelecionado] = useState(getDiaInicial());
+    const [diaSelecionadoCurto, setDiaSelecionadoCurto] = useState(getDiaInicialCurto());
     const [exerciciosDoDia, setExerciciosDoDia] = useState([]); 
+    const [userId, setUserId] = useState(auth.currentUser?.uid || null);
+    const [loading, setLoading] = useState(true);
 
-    // Função que carrega e filtra os exercícios do AsyncStorage
-    const loadExercises = async () => {
-        try {
-            const jsonValue = await AsyncStorage.getItem(EXERCICIOS_KEY);
-            const todosExercicios = jsonValue != null ? JSON.parse(jsonValue) : [];
-            
-            // Filtra a lista inteira apenas pelos exercícios do dia selecionado
-            const filteredExercises = todosExercicios.filter(
-                ex => ex.day === diaSelecionado
-            );
-
-            // Ordena por data de criação (o mais recente aparece primeiro)
-            filteredExercises.sort((a, b) => {
-                const dateA = a.createdAt ? new Date(a.createdAt) : 0;
-                const dateB = b.createdAt ? new Date(b.createdAt) : 0;
-                return dateB - dateA;
-            });
-            
-            setExerciciosDoDia(filteredExercises);
-
-        } catch (e) {
-            console.error("Erro ao carregar exercícios do AsyncStorage:", e);
-            Alert.alert("Erro", "Não foi possível carregar os exercícios salvos.");
-        }
-    };
+    const diaCompleto = useMemo(() => DIAS_COMPLETO_MAP[diaSelecionadoCurto], [diaSelecionadoCurto]);
     
-    // Função para deletar um exercício (Swipe to Delete)
+    // 1. EFEITO: Monitora o ID do usuário
+    useEffect(() => {
+        const unsubscribeAuth = auth.onAuthStateChanged(user => {
+            setUserId(user ? user.uid : null);
+            if (!user) {
+                setLoading(false); 
+                setExerciciosDoDia([]);
+            }
+        });
+        return () => unsubscribeAuth();
+    }, []);
+
+    // 2. EFEITO: ASSINATURA EM TEMPO REAL NO FIRESTORE
+    useEffect(() => {
+        if (!userId) {
+            setLoading(false);
+            return () => {}; 
+        }
+
+        setLoading(true);
+
+        // Se o userId está pronto, inicia a escuta (subscription)
+        const unsubscribe = subscribeToExercicios(userId, diaSelecionadoCurto, (novosExercicios) => {
+            console.log(`Exercícios para ${diaSelecionadoCurto}:`, novosExercicios.length); // DEBUG
+            setExerciciosDoDia(novosExercicios);
+            setLoading(false);
+        });
+
+        // Cleanup: Limpa o listener ao mudar de dia ou ao sair da tela
+        return () => unsubscribe();
+    }, [userId, diaSelecionadoCurto]); // Dependências: Roda quando o userId ou o dia muda
+    
+    // Função para deletar um exercício
     const handleDeleteExercicio = async (id, nome) => {
+        if (!userId) return Alert.alert("Erro", "Usuário não autenticado.");
+
         Alert.alert(
             "Confirmar Exclusão",
             `Tem certeza que deseja remover o exercício "${nome}"?`,
@@ -69,84 +87,44 @@ export default function ExerciciosScreen({ navigation }) {
                 { text: "Cancelar", style: "cancel" },
                 {
                     text: "Remover",
-                    onPress: async () => {
-                        try {
-                            const jsonValue = await AsyncStorage.getItem(EXERCICIOS_KEY);
-                            const todosExercicios = jsonValue != null ? JSON.parse(jsonValue) : [];
-                            
-                            // Cria uma nova lista sem o exercício com o ID correspondente
-                            const novaLista = todosExercicios.filter(ex => ex.id !== id);
-                            
-                            // Salva a lista atualizada
-                            await AsyncStorage.setItem(EXERCICIOS_KEY, JSON.stringify(novaLista));
-                            
-                            loadExercises(); // Atualiza a tela
-                            Alert.alert("Removido", `"${nome}" foi removido.`);
-                        } catch (error) {
-                            console.error("Erro ao remover exercício:", error);
-                            Alert.alert("Erro", "Não foi possível remover o exercício.");
-                        }
-                    }
-                }
-            ]
-        );
-    };
-
-    // FUNÇÃO: DELETAR TODOS OS TREINOS (Plano Semanal)
-    const handleDeleteAllWorkouts = () => {
-        Alert.alert(
-            "Limpar Plano Semanal Completo",
-            "Tem certeza que deseja apagar TODOS os exercícios salvos ?.",
-            [
-                { text: "Cancelar", style: "cancel" },
-                {
-                    text: "APAGAR TUDO",
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            // Apaga a chave inteira do AsyncStorage
-                            await AsyncStorage.removeItem(EXERCICIOS_KEY);
-                            setExerciciosDoDia([]); // Limpa o estado local para atualizar a tela
-                            Alert.alert("Sucesso", "Todos os planos de treino da semana foram apagados.");
+                            await deleteExercicio(userId, id);
+                            Alert.alert("Removido", `"${nome}" foi removido.`);
                         } catch (error) {
-                            console.error("Erro ao apagar todos os exercícios:", error);
-                            Alert.alert("Erro", "Não foi possível apagar os exercícios.");
+                            console.error("Erro ao remover exercício do Firestore:", error);
+                            Alert.alert("Erro", "Não foi possível remover o exercício. Tente novamente.");
                         }
                     }
                 }
             ]
         );
     };
-    
-    // Efeito para recarregar os exercícios quando o dia muda OU quando a tela volta ao foco
-    useEffect(() => {
-        if (isFocused) {
-            loadExercises();
-        }
-    }, [diaSelecionado, isFocused]); 
-    
+
     // Navega para a tela de adicionar exercício
     const handleAddExercicio = () => {
-        navigation.navigate('AdicionarExercicio', { diaSelecionado });
+        if (!userId) {
+            Alert.alert("Erro", "Você precisa estar logado para adicionar exercícios.");
+            return;
+        }
+        navigation.navigate('AdicionarExercicio', { diaSelecionadoCurto }); 
     };
 
-    // Renderiza o botão de deletar à DIREITA (arrastar para a esquerda)
-    const renderRightActions = (item) => {
-        return (
-            <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeleteExercicio(item.id, item.nome)}
-            >
-                <Icon name="delete-forever-outline" size={24} color="#fff" />
-                <Text style={styles.deleteButtonText}>Remover</Text>
-            </TouchableOpacity>
-        );
-    };
+    // Renderiza o botão de deletar (Swipe)
+    const renderRightActions = (item) => (
+        <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteExercicio(item.id, item.nome)}
+        >
+            <Icon name="delete-forever-outline" size={24} color="#fff" />
+            <Text style={styles.deleteButtonText}>Remover</Text>
+        </TouchableOpacity>
+    );
 
-    // Componente para renderizar cada item da lista de exercícios
+    // Renderiza cada item da lista
     const renderExercicioItem = ({ item }) => (
-        // Envolve o item com Swipeable para o "Swipe to Delete"
-        <Swipeable renderRightActions={() => renderRightActions(item)}>
+        <Swipeable renderRightActions={() => renderRightActions(item)} key={item.id}>
             <View style={styles.exercicioItem}>
                 <Text style={styles.exercicioNome}>{item.nome}</Text>
                 <View style={styles.exercicioDetalhes}>
@@ -158,22 +136,22 @@ export default function ExerciciosScreen({ navigation }) {
         </Swipeable>
     );
 
-    // Renderiza o seletor de dias da semana
+    // Renderiza o seletor de dias
     const renderDiaSelector = () => (
         <View style={styles.daysListContainer}>
-            {DIAS_DA_SEMANA.map(dia => (
+            {DIAS_DA_SEMANA_CURTO.map(dia => (
                 <TouchableOpacity
                     key={dia}
                     style={[
                         styles.dayButton,
-                        diaSelecionado === dia && styles.dayButtonSelected
+                        diaSelecionadoCurto === dia && styles.dayButtonSelected
                     ]}
-                    onPress={() => setDiaSelecionado(dia)}
+                    onPress={() => setDiaSelecionadoCurto(dia)} 
                 >
                     <Text 
                         style={[
                             styles.dayText,
-                            diaSelecionado === dia && styles.dayTextSelected
+                            diaSelecionadoCurto === dia && styles.dayTextSelected
                         ]}
                     >
                         {dia}
@@ -182,10 +160,28 @@ export default function ExerciciosScreen({ navigation }) {
             ))}
         </View>
     );
+    
+    // Tratamento de Loading e Não-Logado
+    if (loading) {
+        return (
+            <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
+                <ActivityIndicator size="large" color="#4CAF50" />
+                <Text style={styles.loadingText}>Carregando treinos de {diaCompleto}...</Text>
+            </View>
+        );
+    }
+    
+    if (!userId) {
+        return (
+            <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
+                <Icon name="account-alert" size={50} color="#e74c3c" />
+                <Text style={styles.loadingText}>Faça login para ver seu plano de treino.</Text>
+            </View>
+        );
+    }
 
-
+    // Tela Principal
     return (
-        // OBRIGATÓRIO: Envolver todo o conteúdo com GestureHandlerRootView
         <GestureHandlerRootView style={{ flex: 1 }}> 
             <View style={[styles.container, { paddingTop: insets.top }]}> 
                 
@@ -199,42 +195,30 @@ export default function ExerciciosScreen({ navigation }) {
                         {renderDiaSelector()}
                     </ScrollView>
                 </View>
-                
-                {/* BOTÃO: APAGAR TODO O PLANO SEMANAL */}
-                <TouchableOpacity 
-                    style={styles.deleteAllButton} 
-                    onPress={handleDeleteAllWorkouts}
-                >
-                    <Icon name="trash-can-outline" size={20} color="#e74c3c" />
-                    <Text style={styles.deleteAllButtonText}>Limpar Plano Semanal</Text>
-                </TouchableOpacity>
-
+                                
                 <ScrollView contentContainerStyle={styles.contentContainer}>
-                    <View style={{ width: '100%' }}> 
+                    <View style={styles.card}>
+                        <Ionicons name="barbell" size={60} color="#4CAF50" style={styles.icon} />
+                        <Text style={styles.title}>Treino de {diaCompleto}</Text>
                         
-                        <View style={styles.card}>
-                            <Ionicons name="barbell" size={60} color="#4CAF50" style={styles.icon} />
-                            <Text style={styles.title}>Treino de {diaSelecionado}</Text>
-                            
-                            {exerciciosDoDia.length > 0 ? (
-                                <FlatList
-                                    data={exerciciosDoDia}
-                                    renderItem={renderExercicioItem}
-                                    keyExtractor={item => item.id} 
-                                    scrollEnabled={false}
-                                    contentContainerStyle={styles.exercicioList}
-                                />
-                            ) : (
-                                <View style={styles.exercicioListPlaceholder}>
-                                    <Text style={styles.tip}>
-                                        Nenhum exercício registrado
-                                    </Text>
-                                    <Text style={styles.tip}>
-                                        Clique no (+) para adicionar seu treino!
-                                    </Text>
-                                </View>
-                            )}
-                        </View>
+                        {exerciciosDoDia.length > 0 ? (
+                            <FlatList
+                                data={exerciciosDoDia}
+                                renderItem={renderExercicioItem}
+                                keyExtractor={item => item.id} 
+                                scrollEnabled={false}
+                                contentContainerStyle={styles.exercicioList}
+                            />
+                        ) : (
+                            <View style={styles.exercicioListPlaceholder}>
+                                <Text style={styles.tip}>
+                                    Nenhum exercício registrado para {diaCompleto}
+                                </Text>
+                                <Text style={styles.tip}>
+                                    Clique no (+) para adicionar seu treino!
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </ScrollView>
 
@@ -253,110 +237,35 @@ export default function ExerciciosScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f0f4f7' },
+    centered: { justifyContent: 'center', alignItems: 'center' },
+    loadingText: { marginTop: 10, fontSize: 16, color: '#555' },
     contentContainer: { alignItems: 'center', padding: 20, paddingTop: 0, paddingBottom: 100 },
     
-    // ---------------------------------------------
-    // ESTILOS DO SELETOR DE DIAS
-    daysWrapper: {
-        width: '100%',
-        backgroundColor: '#fff', 
-        shadowColor: "#000", 
-        shadowOffset: { width: 0, height: 1 }, 
-        shadowOpacity: 0.1, 
-        shadowRadius: 3, 
-        elevation: 2,
-        paddingVertical: 10,
-    },
-    daysScrollViewContent: {
-        paddingHorizontal: 10, 
-        alignItems: 'center',
-    },
-    daysListContainer: { 
-        flexDirection: 'row', 
-    },
-    dayButton: { 
-        paddingVertical: 8, 
-        paddingHorizontal: 15, 
-        borderRadius: 8,
-        marginHorizontal: 5, 
-        alignItems: 'center',
-    },
-    dayButtonSelected: { 
-        backgroundColor: '#4CAF50',
-        borderRadius: 10,
-    },
+    // SELETOR DE DIAS
+    daysWrapper: { width: '100%', backgroundColor: '#fff', shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2, paddingVertical: 10, marginBottom: 15, },
+    daysScrollViewContent: { paddingHorizontal: 10, alignItems: 'center', },
+    daysListContainer: { flexDirection: 'row', },
+    dayButton: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8, marginHorizontal: 5, alignItems: 'center', },
+    dayButtonSelected: { backgroundColor: '#4CAF50', borderRadius: 10, },
     dayText: { fontSize: 16, fontWeight: 'bold', color: '#666' }, 
     dayTextSelected: { color: '#fff' },
-    // ---------------------------------------------
     
-    // NOVOS ESTILOS PARA O BOTÃO DE APAGAR TUDO (COM MARGEM SUPERIOR ADICIONADA)
-    deleteAllButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#fff', 
-        padding: 10,
-        marginHorizontal: 20,
-        // 🚨 MUDANÇA APLICADA AQUI
-        marginTop: 15, 
-        marginBottom: 15, 
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#e74c3c', 
-        shadowColor: "#000", 
-        shadowOffset: { width: 0, height: 1 }, 
-        shadowOpacity: 0.1, 
-        shadowRadius: 2, 
-        elevation: 1,
-    },
-    deleteAllButtonText: {
-        marginLeft: 10,
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#e74c3c', 
-    },
-    // ---------------------------------------------
-
-    // Estilos do Card
+    // BOTÃO DE APAGAR TUDO
+    deleteAllButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', padding: 10, marginHorizontal: 20, marginTop: 15, marginBottom: 15, borderRadius: 8, borderWidth: 1, borderColor: '#e74c3c', shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1, },
+    deleteAllButtonText: { marginLeft: 10, fontSize: 14, fontWeight: 'bold', color: '#e74c3c', },
+    disabledButton: { opacity: 0.5, },
+    
+    // CARD E LISTA
     card: { backgroundColor: '#fff', borderRadius: 12, padding: 25, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5, elevation: 3, alignItems: 'center', width: '100%' },
     icon: { marginBottom: 15 },
     title: { fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 15 },
-    
-    // Estilos da Lista de Exercícios
     exercicioList: { width: '100%', marginTop: 10, paddingHorizontal: 0 }, 
-    exercicioItem: { 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        paddingVertical: 15, 
-        paddingHorizontal: 10, 
-        borderBottomWidth: 1, 
-        borderBottomColor: '#eee', 
-        width: '100%',
-        backgroundColor: '#fff', 
-    },
+    exercicioItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#eee', width: '100%', backgroundColor: '#fff', },
     exercicioNome: { fontSize: 17, fontWeight: '600', color: '#333', flex: 2 },
     exercicioDetalhes: { flex: 1, alignItems: 'flex-end' },
     exercicioInfo: { fontSize: 15, color: '#4CAF50', fontWeight: 'bold' },
-
-    // Estilos do botão de deletar (Swipe)
-    deleteButton: {
-        backgroundColor: '#e74c3c', 
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80, 
-        height: '100%',
-        paddingHorizontal: 10,
-        marginVertical: 0,
-        borderRadius: 0,
-    },
-    deleteButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 12,
-        marginTop: 4,
-    },
-    // Estilos do Placeholder e FAB
+    deleteButton: { backgroundColor: '#e74c3c', justifyContent: 'center', alignItems: 'center', width: 80, height: '100%', paddingHorizontal: 10, marginVertical: 0, borderRadius: 0, },
+    deleteButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 12, marginTop: 4, },
     exercicioListPlaceholder: { marginTop: 15, padding: 15, backgroundColor: '#e8f5e9', borderRadius: 8, width: '100%', alignItems: 'center' },
     tip: { fontSize: 14, color: '#4CAF50', fontWeight: '500', textAlign: 'center', marginBottom: 5 },
     fab: { position: 'absolute', width: 60, height: 60, alignItems: 'center', justifyContent: 'center', right: 30, bottom: 30, backgroundColor: '#4CAF50', borderRadius: 30, elevation: 8, zIndex: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4 },
