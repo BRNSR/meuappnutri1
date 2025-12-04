@@ -12,7 +12,7 @@ import {
     ScrollView,
 } from "react-native";
 
-// IMPORTAÇÕES DO FIREBASE FORAM REMOVIDAS, EXCETO AUTH
+// importaçoes do firebase foram removidas exceto o auth
 // import { doc, onSnapshot, setDoc } from "firebase/firestore";
 // auth para pegar o UID
 

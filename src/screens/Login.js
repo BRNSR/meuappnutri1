@@ -1,11 +1,10 @@
-// src/screens/Login.js
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../services/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 
-// Importe os ícones e a imagem
+// Importa os ícones e a imagem
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import logo from '../../assets/fonts/logo.png';
 

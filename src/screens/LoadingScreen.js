@@ -1,4 +1,3 @@
-// src/screens/LoadingScreen.js
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';

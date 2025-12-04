@@ -69,7 +69,7 @@ export default function ExerciciosScreen({ navigation }) {
         return () => unsubscribe();
     }, [userId, diaSelecionadoCurto]); 
     
-    // Deletar um exercício
+    // deletar um exercício
     const handleDeleteExercicio = async (id, nome) => {
         if (!userId) return Alert.alert("Erro", "Usuário não autenticado.");
 
@@ -95,7 +95,7 @@ export default function ExerciciosScreen({ navigation }) {
         );
     };
 
-    // 🌟 NOVA FUNÇÃO: Lida com a navegação para a tela de edição
+    // lida com a navegação para a tela de edição
     const handleEditExercicio = (exercicio) => {
         if (!userId) {
             Alert.alert("Erro", "Você precisa estar logado para editar exercícios.");
@@ -128,7 +128,7 @@ export default function ExerciciosScreen({ navigation }) {
         </TouchableOpacity>
     );
 
-    // 🌟 MODIFICADO: Tornar o item clicável para edição
+    // tornar o item clicável para edição
     const renderExercicioItem = ({ item }) => (
         <Swipeable renderRightActions={() => renderRightActions(item)} key={item.id}>
             <TouchableOpacity 
@@ -147,7 +147,7 @@ export default function ExerciciosScreen({ navigation }) {
         </Swipeable>
     );
 
-    // ... (renderDiaSelector e tratamento de loading/não-logado permanecem os mesmos)
+    // renderDiaSelector e tratamento de loading/não-logado permanecem os mesmos)
     
     if (loading) {
         return (
@@ -195,7 +195,7 @@ export default function ExerciciosScreen({ navigation }) {
         <GestureHandlerRootView style={{ flex: 1 }}> 
             <View style={[styles.container, { paddingTop: insets.top }]}> 
                 
-                {/* Seletor de Dias Horizontal */}
+                {/* seletor de Dias Horizontal */}
                 <View style={styles.daysWrapper}>
                     <ScrollView
                         horizontal
@@ -232,7 +232,7 @@ export default function ExerciciosScreen({ navigation }) {
                     </View>
                 </ScrollView>
 
-                {/* Botão FAB para Adicionar */}
+                {/* botão FAB para Adicionar */}
                 <TouchableOpacity
                     style={styles.fab}
                     onPress={handleAddExercicio}

@@ -9,7 +9,7 @@ import {
     Alert,
     ActivityIndicator,
 } from 'react-native';
-// rEMOVIDO: doc, updateDoc, collection, addDoc
+// foi removido doc, updateDoc, collection, addDoc
 import { doc, getDoc } from 'firebase/firestore'; 
 import { auth, db } from '../services/firebaseConfig';
 import { format } from 'date-fns';
@@ -47,7 +47,7 @@ export default function AddWeightScreen({ navigation }) {
             const pesoValue = parseFloat(peso);
             const formattedDate = format(date, 'yyyy-MM-dd');
 
-            // 1. Obter os dados atuais do perfil (Leitura direta é aceitável aqui)
+            // Obter os dados atuais do perfil (Leitura direta é aceitável aqui)
             const perfilRef = doc(db, 'users', userId, 'profile', 'data');
             const perfilDoc = await getDoc(perfilRef);
             
@@ -60,7 +60,7 @@ export default function AddWeightScreen({ navigation }) {
             const perfilData = perfilDoc.data();
             const { altura, idade, sexo, nivelAtividade, objetivo, metaSemanal } = perfilData;
 
-            // 2. Recalcular todas as métricas com o novo peso (Lógica de cálculo mantida)
+            // Recalcular todas as métricas com o novo peso (Lógica de cálculo mantida)
             const alturaM = altura / 100;
             const imc = pesoValue / (alturaM * alturaM);
             

@@ -60,7 +60,7 @@ export default function Cadastro({ navigation, setHasProfile }) {
             <TouchableOpacity style={styles.button} onPress={handleCadastro}>
                 <Text style={styles.buttonText}>Cadastrar</Text>
             </TouchableOpacity>
-            {/* ✅ Passando setHasProfile como prop na navegação */}
+            {/* passando setHasProfile como prop na navegação */}
             <TouchableOpacity onPress={() => navigation.navigate('Login', { setHasProfile: setHasProfile })}> 
                 <Text style={styles.linkText}>Já tem uma conta? Faça login</Text>
             </TouchableOpacity>
