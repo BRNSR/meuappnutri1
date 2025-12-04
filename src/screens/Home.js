@@ -1,5 +1,5 @@
-// Home.js
 
+// componentes widgets react native
 import React, { useState, useEffect } from "react";
 import {
     View,
@@ -11,26 +11,33 @@ import {
     Alert,
     ScrollView,
 } from "react-native";
+
 // IMPORTAÇÕES DO FIREBASE FORAM REMOVIDAS, EXCETO AUTH
 // import { doc, onSnapshot, setDoc } from "firebase/firestore";
-import { auth } from "../services/firebaseConfig"; // Mantém auth para pegar o UID
+// auth para pegar o UID
+
+import { auth } from "../services/firebaseConfig";
 import { 
     subscribeToProfile, 
     subscribeToDailyLog, 
     saveDailyLog 
-} from "../services/firestoreService"; // ✅ Novas importações modulares
+} from "../services/firestoreService"; 
+
+// ajusta o layout para o celular
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// grafico circular do controle nutricional
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
-// Importe as funções necessárias para manipular a data
+// formatar datas, avan;ar e voltar dias, idioma
 import { format, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+// icones deletar e do adicionar
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; 
 
-
+// refei;oes do dia
 const refeicoesIniciais = [
     { id: "cafe", nome: "Café da Manhã", alimentos: [] },
     { id: "almoco", nome: "Almoço", alimentos: [] },
@@ -38,86 +45,104 @@ const refeicoesIniciais = [
     { id: "jantar", nome: "Jantar", alimentos: [] },
 ];
 
+// nucleo funcional da tela
+// utilizando use State salvando t udo no firebase
 export default function Home({ navigation }) {
-    const insets = useSafeAreaInsets();
-    
+    // ajusta a margen superior da tela, evitando texto atras de camera etc
+    const insets = useSafeAreaInsets(); 
+
     const [dataAtual, setDataAtual] = useState(new Date()); 
     const [refeicoes, setRefeicoes] = useState(refeicoesIniciais);
     const [loading, setLoading] = useState(true);
     const [metaCalorica, setMetaCalorica] = useState(0);
     const userId = auth.currentUser?.uid;
 
+    // -----------------------------------------------------------------------------------------------------
     useEffect(() => {
         if (!userId) {
             setLoading(false);
             return;
         }
 
-        // 1. ASSINATURA DO PERFIL (META CALÓRICA)
-        // Usa a função modularizada do firestoreService
+        // meta calorica alterando em tempo real no firestore
         const unsubPerfil = subscribeToProfile(userId, (docSnap) => {
             if (docSnap && docSnap.exists() && docSnap.data().metaCalorica) {
-                // Seu caminho de dados original: profile -> data -> metaCalorica
+                //callback do docSnap ao alterar
                 setMetaCalorica(docSnap.data().metaCalorica);
             } else {
                 setMetaCalorica(0);
             }
         });
-
-        // 2. ASSINATURA DO DAILY LOG (Refeições do dia)
+        // formata a data 
         const dataString = format(dataAtual, "yyyy-MM-dd");
-        
-        // Usa a função modularizada do firestoreService
+
+        // cria um listener no firestore
         const unsubscribe = subscribeToDailyLog(userId, dataString, (docSnap) => {
-            if (docSnap) { // Verifica se docSnap não é null (erro no listener)
+            if (docSnap) { 
+                // pega as refei;oes
                  if (docSnap.exists()) {
                     const dadosSalvos = docSnap.data().refeicoes;
                     setRefeicoes(dadosSalvos);
                 } else {
-                    // Se o documento DailyLog para esta data não existe, cria-o no banco
+                    // Se nao existir ira criar automaticamente
                     saveDailyLog(userId, dataString, {
                         refeicoes: refeicoesIniciais,
                         totais: { kcal: 0, prot: 0, carb: 0, gord: 0 },
                     });
                     setRefeicoes(refeicoesIniciais);
+                    // ***evita error de documento inexistente.
                 }
             }
-            setLoading(false);
+            setLoading(false); // tira o loading
         });
 
-        // Cleanup function para cancelar as assinaturas
+        // Cleanup  para cancelar os listeners
         return () => {
             unsubscribe();
             unsubPerfil();
         };
-    }, [userId, dataAtual]); // Re-executa se o usuário ou a data mudar
+        // *** evita gasto descenessario de memorias, callbacks duplicados etc.
 
+    }, [userId, dataAtual]); // executa o useeffect sempre que o id e data mudar e atualiza.
+    // -----------------------------------------------------------------------------------------------------
+
+    // faz um .map em todas as refei;oes, padrão do react.
+    // *** criando um novo array
     const adicionarAlimento = (refeicaoId, alimento) => {
         const novasRefeicoes = refeicoes.map((r) =>
+            // ao encontrar, copia tudo com ...r
             r.id === refeicaoId ? { ...r, alimentos: [...r.alimentos, alimento] } : r
         );
+        // envia para o firestore
         salvarRefeicoes(novasRefeicoes);
     };
 
+    // mesma coisa, recebe o id e o alimento
     const removerAlimento = (refeicaoId, alimentoIndex) => {
         const novasRefeicoes = refeicoes.map((r) =>
             r.id === refeicaoId
                 ? {
                     ...r,
+                    // .filter para remover alimento pelo index
                     alimentos: r.alimentos.filter((_, index) => index !== alimentoIndex),
                 }
                 : r
         );
+        // chama salvarrefeiçoes para gravar no firestore
         salvarRefeicoes(novasRefeicoes);
     };
 
     // Função para salvar no Firestore (usa saveDailyLog do firestoreService)
     const salvarRefeicoes = async (novasRefeicoes) => {
+        // sair caso nao tenha usuario logado.
         if (!userId) return;
         const dataString = format(dataAtual, "yyyy-MM-dd");
 
+        // juntar todos os alimentos do dia.
+        // flatMap pega todos os id e transforma em uma lista
         const todosOsAlimentos = novasRefeicoes.flatMap(refeicao => refeicao.alimentos);
         
+        // reduce pega tudo e transforma em calorias, prot, gord e carb
         const totais = todosOsAlimentos.reduce(
             (acc, a) => ({
                 kcal: acc.kcal + parseFloat(a.kcal),
@@ -127,20 +152,26 @@ export default function Home({ navigation }) {
             }),
             { kcal: 0, prot: 0, carb: 0, gord: 0 }
         );
-
+        // monta o objeto que vai para o firestore
         const dataToSave = { refeicoes: novasRefeicoes, totais };
 
         try {
-            // ✅ Usa a função modularizada
+
+            // ***Encontra o caminho do documento, escreve e substitui.
             await saveDailyLog(userId, dataString, dataToSave); 
+
+            // caso usuario esteja sem internet, impede do app de crashar.
         } catch (e) {
             console.error("Erro ao salvar dados: ", e);
             Alert.alert("Erro", "Não foi possível salvar os dados. Tente novamente.");
         }
     };
 
+    // recebe o array alimentos e devolve um objeto com kcal prot carb gord
     const calcularTotais = (alimentos) => {
+        // utilizando reduce, bom para acumular dados
         return alimentos.reduce(
+            // utiliza o parseFloat para evitar erros como 200 + 50 = 20050, pois valores vieram como string do firestore
             (totais, a) => ({
                 kcal: totais.kcal + parseFloat(a.kcal),
                 prot: totais.prot + parseFloat(a.prot),
@@ -151,25 +182,33 @@ export default function Home({ navigation }) {
         );
     };
 
-    // FUNÇÕES PARA AVANÇAR E VOLTAR A DATA
+    // avançar e voltar data
+    // biblioteca date-fns
+    // sempre que dataAtual mudar o useEffect é disparado automaticamente.
     const handleDiaAnterior = () => {
         setDataAtual(subDays(dataAtual, 1));
     };
-
     const handleProximoDia = () => {
         setDataAtual(addDays(dataAtual, 1));
     };
 
+    // pega todas as refeiçoes e soma tudo
     const totaisDoDia = calcularTotais(refeicoes.flatMap((r) => r.alimentos));
     
+    // meta kcal de acordo com a meta do usuario.
     const caloriasTotais = totaisDoDia.kcal;
     const caloriasRestantes = metaCalorica - caloriasTotais;
     
+    // grafico em circulo
     const fillPercentage = metaCalorica > 0 ? (caloriasTotais / metaCalorica) * 100 : 0;
     const progressFill = Math.min(fillPercentage, 100);
 
+    // grafico em circulo = muda a cor se ultrapassar a meta
     const progressColor = caloriasTotais > metaCalorica ? "#E74C3C" : "#4CAF50";
 
+
+
+    // antes de mostrar a tela verifica se esta carregando dados do firestore, se for sim nao rederiza o restante da tela
     if (loading) {
         return (
             <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
@@ -179,6 +218,8 @@ export default function Home({ navigation }) {
         );
     }
 
+    // renderiza toda a interface 
+    // insets.top ajusta automaticamente espaços para celulares
     return (
         <ScrollView 
             style={styles.scrollView} 
@@ -187,7 +228,7 @@ export default function Home({ navigation }) {
                 { paddingTop: insets.top + -10 } 
             ]}
         >
-            {/* BLOCO: Seleção de data */}
+            {/* Parte de trocar os dias */}
             <View style={styles.dateSelectorContainer}>
                 <TouchableOpacity onPress={handleDiaAnterior}>
                     <Ionicons name="chevron-back" size={30} color="#333" />
@@ -200,6 +241,7 @@ export default function Home({ navigation }) {
                 </TouchableOpacity>
             </View>
             
+            {/* grafico animado das kcal gord prot gord */}
             <View style={styles.card}>
                 <AnimatedCircularProgress
                     size={180}
@@ -220,6 +262,7 @@ export default function Home({ navigation }) {
                     }
                 </AnimatedCircularProgress>
 
+                {/* resumo das metas caloricas restantes */}
                 <View style={styles.summaryRow}>
                     <View style={styles.summaryItem}>
                         <Text style={styles.summaryLabel}>Meta</Text>
@@ -253,9 +296,10 @@ export default function Home({ navigation }) {
 
             <FlatList
                 data={refeicoes}
+                //keyextractor gera uma key para cada item da lista
                 keyExtractor={(item) => item.id.toString()}
-                scrollEnabled={false} // Para funcionar dentro do ScrollView
-                renderItem={({ item }) => {
+                scrollEnabled={false} // evita que a rolagem interna do flatlist funcione, funcionando apenas o ScrollView .
+                renderItem={({ item }) => { //função para cada item
                     const totais = calcularTotais(item.alimentos);
                     return (
                         <View style={styles.mealCard}>
@@ -333,6 +377,9 @@ const styles = StyleSheet.create({
         color: "#333",
         textAlign: "center",
     },
+
+    // ------------------------------------------------------------------------
+
     card: {
         backgroundColor: "#fff",
         borderRadius: 16, 
@@ -345,6 +392,7 @@ const styles = StyleSheet.create({
         elevation: 5,
         alignItems: "center",
     },
+    // ------------------------------------------------------------------------
     kcalChart: {
         marginBottom: 15,
     },
@@ -362,6 +410,7 @@ const styles = StyleSheet.create({
         color: '#888',
         marginTop: 5,
     },
+    // ------------------------------------------------------------------------
     summaryRow: {
         flexDirection: "row",
         justifyContent: "space-around",
@@ -382,12 +431,14 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         color: "#333",
     },
+    // ------------------------------------------------------------------------
     separator: {
         height: StyleSheet.hairlineWidth,
         backgroundColor: '#ccc',
         width: '80%',
         marginVertical: 15,
     },
+    // ------------------------------------------------------------------------
     legendContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
@@ -412,6 +463,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
     },
+    // ------------------------------------------------------------------------
     mealCard: {
         backgroundColor: "#fff",
         borderRadius: 16, 
@@ -437,6 +489,7 @@ const styles = StyleSheet.create({
     addMealButton: {
         padding: 5,
     },
+    // ------------------------------------------------------------------------
     alimentoLinha: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -463,4 +516,5 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         color: "#222",
     },
+    // ------------------------------------------------------------------------
 });

@@ -140,7 +140,7 @@ export default function Receitas({ navigation }) {
         );
     }
     
-    // Se o usuário não estiver logado, avisa, mas ainda mostra as receitas padrão
+    // mostrar se o usuario está logado
     const showLoginWarning = !userId;
 
     return (
@@ -176,8 +176,14 @@ export default function Receitas({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f0f4f7' },
-    listContent: { padding: 20, paddingBottom: 80 },
+    container: { 
+        flex: 1, 
+        backgroundColor: '#f0f4f7' 
+    },
+    listContent: { 
+        padding: 20, 
+        paddingBottom: 80 
+    },
     card: {
         backgroundColor: '#e8f5e9',
         borderRadius: 10,
@@ -191,9 +197,20 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#4CAF50',
     },
-    content: { flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start' },
-    recipeName: { fontSize: 18, fontWeight: 'bold', color: '#2e7d32', marginBottom: 5 },
-    recipeMacros: { fontSize: 14, color: '#666' },
+    content: { 
+        flexDirection: 'column', 
+        justifyContent: 'flex-start', 
+        alignItems: 'flex-start' 
+    },
+    recipeName: { 
+        fontSize: 18, 
+        fontWeight: 'bold', 
+        color: '#2e7d32', 
+        marginBottom: 5 
+    },
+    recipeMacros: { 
+        fontSize: 14, 
+        color: '#666' },
     floatingButton: {
         position: 'absolute',
         bottom: 30, right: 30,
@@ -209,7 +226,7 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
     },
     deleteButton: {
-        backgroundColor: '#e74c3c', // Vermelho
+        backgroundColor: '#e74c3c', 
         justifyContent: 'center',
         alignItems: 'center',
         width: 90,
@@ -218,24 +235,40 @@ const styles = StyleSheet.create({
         marginLeft: 5, 
         paddingHorizontal: 10,
     },
-    deleteButtonText: { color: '#fff', fontWeight: 'bold', marginTop: 5 },
-    centered: { justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 10, fontSize: 16, color: '#4CAF50' },
-    emptyText: { textAlign: 'center', marginTop: 50, fontSize: 16, color: '#777' },
+    deleteButtonText: { 
+        color: '#fff', 
+        fontWeight: 'bold', 
+        marginTop: 5 
+    },
+    centered: { 
+        justifyContent: 'center', 
+        alignItems: 'center' 
+    },
+    loadingText: { 
+        marginTop: 10, 
+        fontSize: 16, 
+        color: '#4CAF50' 
+    },
+    emptyText: { 
+        textAlign: 'center', 
+        marginTop: 50, 
+        fontSize: 16, 
+        color: '#777' 
+    },
     warningBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#ffe0b2', // Laranja claro
+        backgroundColor: '#ffe0b2', 
         padding: 10,
         marginHorizontal: 20,
         borderRadius: 8,
         marginBottom: 10,
         borderLeftWidth: 4,
-        borderLeftColor: '#ff9800', // Laranja
+        borderLeftColor: '#ff9800', 
     },
     warningText: {
         marginLeft: 10,
         fontSize: 14,
-        color: '#e65100', // Laranja escuro
+        color: '#e65100', 
     }
 });

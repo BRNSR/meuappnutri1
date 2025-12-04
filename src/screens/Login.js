@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 // Importe os ícones e a imagem
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import logo from '../../assets/fonts/logo.png'; // Ajuste o caminho da imagem se necessário
+import logo from '../../assets/fonts/logo.png';
 
 export default function Login({ navigation, setHasProfile }) {
     const [email, setEmail] = useState('');
@@ -63,7 +63,7 @@ export default function Login({ navigation, setHasProfile }) {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
-                placeholderTextColor="#A9A9A9" // Adicionado para contraste
+                placeholderTextColor="#A9A9A9" 
             />
             <TextInput
                 style={styles.input}
@@ -71,7 +71,7 @@ export default function Login({ navigation, setHasProfile }) {
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
-                placeholderTextColor="#A9A9A9" // Adicionado para contraste
+                placeholderTextColor="#A9A9A9" 
             />
             <TouchableOpacity style={styles.button} onPress={handleLogin}>
                 <Text style={styles.buttonText}>Entrar</Text>
@@ -88,10 +88,10 @@ export default function Login({ navigation, setHasProfile }) {
             </View>
 
             <View style={styles.socialButtonsContainer}>
-                <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Login com Google', 'Funcionalidade em desenvolvimento.')}>
+                <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Login com Google', 'em desenvolvimento.')}>
                     <Ionicons name="logo-google" size={30} color="#DB4437" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Login com Facebook', 'Funcionalidade em desenvolvimento.')}>
+                <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Login com Facebook', 'em desenvolvimento.')}>
                     <Ionicons name="logo-facebook" size={30} color="#4267B2" />
                 </TouchableOpacity>
             </View>
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#fff', // ✅ Fundo branco
+        backgroundColor: '#fff', 
     },
     logo: {
         width: 255,
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         marginBottom: 30,
-        color: '#000', // ✅ Texto preto para contraste
+        color: '#000', 
     },
     input: {
         width: '100%',
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         paddingHorizontal: 15,
         borderRadius: 8,
-        color: '#000', // ✅ Texto digitado preto
+        color: '#000', 
     },
     button: {
         width: '100%',
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#fff', // ✅ Fundo branco para a tela de carregamento
+        backgroundColor: '#fff', 
     },
     dividerContainer: {
         flexDirection: 'row',
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     },
     dividerText: {
         marginHorizontal: 10,
-        color: '#000', // ✅ Texto preto para contraste
+        color: '#000', 
         fontSize: 16,
     },
     socialButtonsContainer: {

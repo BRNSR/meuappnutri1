@@ -7,11 +7,11 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './src/services/firebaseConfig';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
-// Importação dos ícones
+// icones
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-// Importação das telas (Ajuste os caminhos se necessário)
+// telas
 import Login from './src/screens/Login';
 import Cadastro from './src/screens/Cadastro';
 import ProfileDataScreen from './src/screens/ProfileDataScreen';
@@ -32,7 +32,7 @@ import AdicionarExercicio from './src/screens/AdicionarExercicio';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// --- Pilhas de Navegação (Stacks) ---
+// parte das abas para navegação 
 
 function DashboardStack() {
     return (
@@ -142,8 +142,8 @@ function DiarioStack() {
                 name="DiarioMain" 
                 component={Home} 
                 options={{ 
-                    headerShown: true, // 2. Garantir que o header seja exibido
-                    headerTitle: "Diário", // ⬅️ TÍTULO ADICIONADO
+                    headerShown: true, 
+                    headerTitle: "Diário",
                     headerStyle: { backgroundColor: '#4CAF50' },
                     headerTintColor: '#fff',
                 }}
@@ -202,7 +202,7 @@ function ReceitasStack() {
 }
 
 
-// --- Navegação Principal por Abas (MainTabs) ---
+// navegação Principal por Abas (MainTabs)
 
 function MainTabs() {
     return (
@@ -258,7 +258,7 @@ function MainTabs() {
                 name="Diário" 
                 component={DiarioStack} 
                 options={{
-                    tabBarLabel: '', // Remove o texto para o FAB
+                    tabBarLabel: '', // remove o texto para o FAB
                 }}
             />
             <Tab.Screen name="Progresso" component={ProgressoStack} />
@@ -267,7 +267,7 @@ function MainTabs() {
     );
 }
 
-// --- Pilha de Autenticação (AuthStack) ---
+// Pilha de Autenticação (AuthStack) ---
 
 function AuthStack({ setHasProfile }) {
     return (
@@ -291,7 +291,7 @@ function AuthStack({ setHasProfile }) {
     );
 }
 
-// --- Componente Principal (App) ---
+// componente Principal (App)
 
 export default function App() {
     const [user, setUser] = useState(null);
@@ -338,15 +338,13 @@ export default function App() {
     );
 }
 
-// --- Estilos ---
-
 const styles = StyleSheet.create({
     loadingContainer: {
         flex: 1, 
         justifyContent: 'center', 
         alignItems: 'center',
     },
-    // Estilo da barra de navegação COMPENSANDO O DESTAQUE
+
     tabBarComDestaque: {
         height: 80, // Ligeiramente mais alta para acomodar o botão
         paddingTop: 5, 
@@ -363,14 +361,15 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginBottom: 5,
     },
-    // NOVO ESTILO: Formato Círculo Elevado com Posição Ajustada
+
+    // diario circular
+
     fabContainerDestacado: {
         backgroundColor: '#4CAF50', // Cor de destaque (verde)
         borderRadius: 35, // Formato circular
         padding: 15,
-        top: -5, // ⬅️ AJUSTE PARA O DESTAQUE: Eleva para fora da barra, mas não muito
+        top: -5, // Eleva para fora da barra, mas não muito
         
-        // Estilos de elevação/sombra para destacar
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,

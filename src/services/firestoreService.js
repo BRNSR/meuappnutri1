@@ -1,5 +1,3 @@
-// firestoreService.js
-
 import { 
     getFirestore, 
     collection, 
@@ -7,23 +5,24 @@ import {
     addDoc, 
     setDoc, 
     deleteDoc, 
+    updateDoc, // 🌟 Adicionado para edição
     query, 
     where, 
     orderBy, 
     onSnapshot,
     getDocs,
     writeBatch,
-    serverTimestamp // Importado para uso ideal de data/hora
+    serverTimestamp 
 } from 'firebase/firestore';
 
-// ✅ CORREÇÃO: Importa 'app' do seu arquivo de configuração
 import { app } from './firebaseConfig'; 
 
 const db = getFirestore(app);
 
-// =========================================================
-// 1. REFERÊNCIAS DE COLEÇÕES
-// =========================================================
+
+// ------------------------------------------------
+// Referências
+// ------------------------------------------------
 
 const getExerciciosCollectionRef = (userId) => {
     return collection(db, 'users', userId, 'exercicios');
@@ -37,7 +36,6 @@ const getProfileDocRef = (userId) => {
     return doc(db, 'users', userId, 'profile', 'data'); 
 };
 
-// Mantendo 'HistoricoDePeso' para consistência com seus dados
 const getWeightHistoryCollectionRef = (userId) => {
     return collection(db, 'users', userId, 'HistoricoDePeso');
 };
@@ -47,16 +45,16 @@ const getReceitasCollectionRef = (userId) => {
 };
 
 
-// =========================================================
-// 2. FUNÇÕES CRUD: EXERCÍCIOS
-// =========================================================
+
+// ------------------------------------------------
+// salvar um novo Exercício
+// ------------------------------------------------
 
 export async function saveExercicio(userId, exercicioData) {
     if (!userId) throw new Error("UserID é obrigatório.");
     try {
         await addDoc(getExerciciosCollectionRef(userId), {
             ...exercicioData,
-            // ✅ MELHORIA: Usando serverTimestamp()
             createdAt: serverTimestamp() 
         });
     } catch (error) {
@@ -65,6 +63,29 @@ export async function saveExercicio(userId, exercicioData) {
     }
 }
 
+// ------------------------------------------------
+// atualizar um exercício existente
+// ------------------------------------------------
+export async function updateExercicio(userId, exercicioId, data) {
+    if (!userId || !exercicioId) throw new Error("UserID e Exercício ID são obrigatórios.");
+    try {
+        const docRef = doc(getExerciciosCollectionRef(userId), exercicioId);
+        
+        await updateDoc(docRef, {
+            ...data,
+            lastUpdated: serverTimestamp() 
+        });
+        
+    } catch (error) {
+        console.error("Erro ao atualizar exercício:", error);
+        throw error;
+    }
+}
+
+
+// ------------------------------------------------
+// deletar um Exercício
+// ------------------------------------------------
 export async function deleteExercicio(userId, exercicioId) {
     if (!userId || !exercicioId) throw new Error("UserID e Exercício ID são obrigatórios.");
     try {
@@ -76,6 +97,10 @@ export async function deleteExercicio(userId, exercicioId) {
     }
 }
 
+
+// ------------------------------------------------
+// subscrever-se a Exercícios por Dia 
+// ------------------------------------------------
 export function subscribeToExercicios(userId, diaDaSemana, callback) {
     if (!userId) return () => {};
 
@@ -96,30 +121,11 @@ export function subscribeToExercicios(userId, diaDaSemana, callback) {
     return unsubscribe;
 }
 
-export async function deleteAllExercicios(userId) {
-    if (!userId) throw new Error("UserID é obrigatório.");
-    
-    try {
-        const exerciciosRef = getExerciciosCollectionRef(userId);
-        const snapshot = await getDocs(exerciciosRef);
-        
-        const batch = writeBatch(db); 
-
-        snapshot.docs.forEach((doc) => {
-            batch.delete(doc.ref);
-        });
-
-        await batch.commit();
-    } catch (error) {
-        console.error("Erro ao apagar todos os exercícios:", error);
-        throw error;
-    }
-}
 
 
-// =========================================================
-// 3. FUNÇÕES CRUD: DAILY LOG
-// =========================================================
+// ------------------------------------------------
+// funções de Diário
+// ------------------------------------------------
 
 export async function saveDailyLog(userId, dataString, dataToSave) {
     if (!userId) throw new Error("UserID é obrigatório.");
@@ -147,9 +153,9 @@ export function subscribeToDailyLog(userId, dataString, callback) {
     return unsubscribe;
 }
 
-// =========================================================
-// 4. FUNÇÕES CRUD: PROFILE
-// =========================================================
+// ------------------------------------------------
+// funções de Perfil
+// ------------------------------------------------
 
 export async function saveProfile(userId, profileData) {
     if (!userId) throw new Error("UserID é obrigatório.");
@@ -157,7 +163,6 @@ export async function saveProfile(userId, profileData) {
         const docRef = getProfileDocRef(userId);
         await setDoc(docRef, { 
             ...profileData, 
-            // ✅ MELHORIA: Usando serverTimestamp() para o último update
             lastUpdated: serverTimestamp() 
         }, { merge: true });
     } catch (error) {
@@ -181,9 +186,9 @@ export function subscribeToProfile(userId, callback) {
     return unsubscribe;
 }
 
-// =========================================================
-// 5. FUNÇÕES CRUD: WEIGHT HISTORY
-// =========================================================
+// ------------------------------------------------
+// funções de Peso
+// ------------------------------------------------
 
 export async function addWeightEntry(userId, weightData) {
     if (!userId) throw new Error("UserID é obrigatório.");
@@ -191,7 +196,6 @@ export async function addWeightEntry(userId, weightData) {
         const weightRef = getWeightHistoryCollectionRef(userId);
         await addDoc(weightRef, { 
             ...weightData, 
-            // ✅ MELHORIA: Usando serverTimestamp()
             createdAt: serverTimestamp() 
         });
     } catch (error) {
@@ -219,9 +223,9 @@ export function subscribeToWeightHistory(userId, callback) {
     return unsubscribe;
 }
 
-// =========================================================
-// 6. 🍲 FUNÇÕES CRUD: RECEITAS
-// =========================================================
+// ------------------------------------------------
+// funções de Receitas
+// ------------------------------------------------
 
 export async function saveReceita(userId, receitaData) {
     if (!userId) throw new Error("UserID é obrigatório.");
@@ -243,6 +247,10 @@ export async function saveReceita(userId, receitaData) {
         throw error;
     }
 }
+
+// ------------------------------------------------
+// deletar Receita 
+// ------------------------------------------------
 
 export async function deleteReceita(userId, receitaId) {
     if (!userId || !receitaId) throw new Error("UserID e Receita ID são obrigatórios.");

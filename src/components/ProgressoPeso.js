@@ -25,21 +25,18 @@ export default function WeightProgressChart() {
 
         setLoading(true);
 
-        // ✅ CORREÇÃO: Usando 'HistoricoDePeso' para a coleção de peso
         const q = query(collection(db, "users", userId, "HistoricoDePeso"), orderBy("timestamp", "asc"));
         
         const unsubscribeWeight = onSnapshot(q, (snapshot) => {
             const history = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // É CRÍTICO que 'data.timestamp' seja um objeto Timestamp ou Date para ordenação
+                // &&&muito importante 'data.timestamp' seja um objeto Timestamp ou Date para ordenação
                 const timestamp = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
 
                 history.push({
                     id: doc.id,
                     peso: data.peso,
-                    // O campo 'data' foi removido em favor do uso do timestamp no componente anterior,
-                    // mas vou manter aqui para compatibilidade, assumindo que você salva a data.
                     data: data.data || timestamp.toISOString(), 
                     timestamp: timestamp,
                 });
@@ -83,7 +80,6 @@ export default function WeightProgressChart() {
                                 Alert.alert("Erro", "Usuário não autenticado.");
                                 return;
                             }
-                            // ✅ CORREÇÃO: Usando 'HistoricoDePeso'
                             const recordRef = doc(db, "users", userId, "HistoricoDePeso", recordId); 
                             await deleteDoc(recordRef);
                             Alert.alert("Sucesso", "Registro de peso deletado.");
@@ -128,7 +124,6 @@ export default function WeightProgressChart() {
     const historyForChart = weightHistory.slice(-periodLimit);
 
     const labels = historyForChart.map(entry => {
-        // Usa o campo 'data' ou o 'timestamp' para formatar
         const dateString = typeof entry.data === 'string' ? entry.data : entry.timestamp?.toISOString();
         const dateObj = new Date(dateString);
         
@@ -247,7 +242,6 @@ export default function WeightProgressChart() {
 }
 
 const styles = StyleSheet.create({
-    // ... (Seus estilos originais)
     container: {
         flex: 1,
         padding: 20,

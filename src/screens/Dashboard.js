@@ -96,19 +96,20 @@ export default function Dashboard({ navigation }) {
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>Painel do Perfil</Text>
 
-            {/* SEÇÃO 1: METAS DE DESTAQUE */}
+            {/* metas */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Minhas Metas</Text>
                 
                 <View style={styles.goalRow}>
-                    {/* Meta Calórica */}
+
+                    {/* meta kcal */}
                     <View style={[styles.goalBox, { backgroundColor: '#e8f5e9' }]}>
                         <Ionicons name="flame-outline" size={30} color="#4CAF50" />
                         <Text style={styles.goalValue}>{metaCalorica.toFixed(0)}</Text>
                         <Text style={styles.goalLabel}>Kcal Diárias</Text>
                     </View>
                     
-                    {/* Meta de Peso */}
+                    {/* meta de peso */}
                     <View style={[styles.goalBox, { backgroundColor: '#f0e8f5' }]}>
                         <MaterialCommunityIcons name="target" size={30} color="#8A2BE2" />
                         <Text style={styles.goalValue}>{metaPeso} kg</Text>
@@ -116,7 +117,7 @@ export default function Dashboard({ navigation }) {
                     </View>
                 </View>
 
-                {/* Objetivo Principal */}
+                {/* objetivo  */}
                 <View style={styles.infoRow}>
                     <Ionicons name="bulb-outline" size={20} color="#333" />
                     <Text style={styles.infoTextClean}>
@@ -125,12 +126,13 @@ export default function Dashboard({ navigation }) {
                 </View>
             </View>
 
-            {/* SEÇÃO 2: ESTATÍSTICAS E AÇÃO DE PESO */}
+            {/*  profile */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Estatísticas do Corpo</Text>
                 
                 <View style={styles.statRow}>
-                    {/* Peso Atual */}
+
+                    {/* peso atual */}
                     <View style={styles.statBoxClean}>
                         <Text style={styles.statTitle}>Peso Atual</Text>
                         <Text style={styles.statValueClean}>
@@ -146,7 +148,7 @@ export default function Dashboard({ navigation }) {
                     </View>
                 </View>
                 
-                {/* Botão de Adicionar Peso (Destaque e Localizado) */}
+                {/* botao add peso */}
                 <TouchableOpacity
                     style={styles.actionButtonSmall}
                     onPress={() => navigation.navigate("AddWeight")}
@@ -156,16 +158,18 @@ export default function Dashboard({ navigation }) {
                 </TouchableOpacity>
             </View>
 
-            {/* SEÇÃO 3: CÁLCULOS NUTRICIONAIS */}
+            {/* calc nutri */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Cálculos Nutricionais (Referência)</Text>
                 <View style={styles.statRow}>
+
                     {/* TMB */}
                     <View style={styles.statBoxClean}>
                         <Text style={styles.statTitle}>TMB</Text>
                         <Text style={styles.statValueClean}>{tmb ? `${tmb.toFixed(0)} kcal` : 'N/A'}</Text>
                         <Text style={styles.statLabel}>Metabólica Basal</Text>
                     </View>
+                    
                     {/* GCD */}
                     <View style={styles.statBoxClean}>
                         <Text style={styles.statTitle}>GCD</Text>
@@ -175,7 +179,7 @@ export default function Dashboard({ navigation }) {
                 </View>
             </View>
 
-            {/* AÇÃO DE CONFIGURAÇÃO (Fundo da tela) */}
+            {/* botao para editar perfil*/}
             <TouchableOpacity
                 style={styles.configButton}
                 onPress={() => navigation.navigate("ProfileData")}
@@ -190,7 +194,7 @@ export default function Dashboard({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
-        backgroundColor: "#f0f4f7", // Fundo cinza claro
+        backgroundColor: "#f0f4f7", 
         padding: 20,
         paddingBottom: 80, 
     },
@@ -200,22 +204,22 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     title: {
-        fontSize: 22, // Um pouco menor para dar espaço
+        fontSize: 22, 
         fontWeight: "bold",
         color: "#333",
         marginBottom: 20,
         textAlign: "center",
     },
-    // 🚀 Soft UI Style
+
     section: {
         backgroundColor: "#fff",
-        borderRadius: 16, // Mais suave
+        borderRadius: 16, 
         padding: 20,
         marginBottom: 25,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08, // Sombra sutil
-        shadowRadius: 8, // Sombra espalhada
+        shadowOpacity: 0.08, 
+        shadowRadius: 8, 
         elevation: 5,
     },
     sectionTitle: {
@@ -232,7 +236,7 @@ const styles = StyleSheet.create({
         color: "#333",
     },
     
-    // --- ESTILOS DE DESTAQUE DE METAS ---
+    // metas
     goalRow: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -270,7 +274,7 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
 
-    // --- ESTILOS DE ESTATÍSTICAS LIMPAS ---
+    // 
     statRow: {
         flexDirection: "row",
         justifyContent: "space-around",
@@ -282,9 +286,9 @@ const styles = StyleSheet.create({
         padding: 15,
         marginHorizontal: 5,
         borderRadius: 10,
-        backgroundColor: '#fff', // Fundo branco dentro do card branco
+        backgroundColor: '#fff', 
         borderWidth: StyleSheet.hairlineWidth,
-        borderColor: '#eee', // Borda sutil para separar
+        borderColor: '#eee', 
     },
     statTitle: {
         fontSize: 14,
@@ -293,7 +297,7 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     statValueClean: {
-        fontSize: 20, // Um pouco menor que as metas
+        fontSize: 20, 
         fontWeight: "bold",
         color: "#333",
     },
@@ -304,7 +308,7 @@ const styles = StyleSheet.create({
         marginTop: 5,
     },
     
-    // --- BOTÕES DE AÇÃO ---
+    //
     actionButtonSmall: {
         backgroundColor: "#4CAF50",
         padding: 10,
@@ -336,7 +340,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginLeft: 8,
     },
-    // Estilos para telas vazias/erro (mantidos)
+    // 
     noProfileContainer: {
         flex: 1,
         justifyContent: "center",
@@ -349,7 +353,7 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginTop: 50,
     },
-    // Mantido apenas para a tela de 'no profile'
+    // 
     actionButton: { 
         backgroundColor: "#4CAF50",
         padding: 15,

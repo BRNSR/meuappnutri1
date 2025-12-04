@@ -1,4 +1,3 @@
-// src/screens/NivelAtividadeScreen.js
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 
@@ -96,8 +95,14 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20, marginBottom: 10, alignSelf: 'flex-start' },
     optionsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 15 },
     option: { padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, marginRight: 10, marginBottom: 10 },
-    selectedOption: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-    selectedOptionText: { color: 'white' },
+    
+    selectedOption: { 
+        backgroundColor: '#4CAF50', 
+        borderColor: '#4CAF50' 
+    },
+    selectedOptionText: { 
+        color: 'white' 
+    },
     descriptionBox: {
         backgroundColor: '#f0f4f7',
         padding: 15,
@@ -118,7 +123,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#ffffffff'   // 👈 fundo branco
+        backgroundColor: '#ffffffff'   
     },
 
     

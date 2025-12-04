@@ -1,10 +1,9 @@
-// src/screens/Cadastro.js
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../services/firebaseConfig';
 
-// ✅ setHasProfile é recebido como prop direta
+// setHasProfile é recebido como prop direta
 export default function Cadastro({ navigation, setHasProfile }) { 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -14,7 +13,7 @@ export default function Cadastro({ navigation, setHasProfile }) {
         setLoading(true);
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            // ✅ Passando userId e setHasProfile como prop para ProfileDataScreen
+            // Passando userId e setHasProfile como prop para ProfileDataScreen
             navigation.replace("ProfileData", { userId: userCredential.user.uid, setHasProfile: setHasProfile });
         } catch (error) {
             let errorMessage = "Erro ao cadastrar.";
@@ -83,7 +82,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#ffffffff'   // 👈 fundo branco
+        backgroundColor: '#ffffffff'   // fundo branco
     },
     
 });

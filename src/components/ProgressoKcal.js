@@ -25,7 +25,6 @@ export default function CalorieProgressChart() {
 
         setLoading(true);
         
-        // ✅ CORREÇÃO: Usando 'Diario' (D maiúsculo) para a coleção de logs
         const q = query(collection(db, "users", userId, "Diario"), orderBy("__name__", "asc")); 
         
         const unsubscribeCalories = onSnapshot(q, (snapshot) => {
@@ -48,7 +47,6 @@ export default function CalorieProgressChart() {
             setLoading(false);
         });
 
-        // ✅ CORREÇÃO: Usando 'Diario' (D maiúsculo) na referência de exclusão
         const perfilRef = doc(db, "users", userId, "profile", "data");
         const unsubscribePerfil = onSnapshot(perfilRef, (docSnap) => {
             if (docSnap.exists()) {
@@ -79,7 +77,6 @@ export default function CalorieProgressChart() {
                                 Alert.alert("Erro", "Usuário não autenticado.");
                                 return;
                             }
-                            // ✅ CORREÇÃO: Usando 'Diario' (D maiúsculo)
                             const docRef = doc(db, "users", userId, "Diario", docId); 
                             await deleteDoc(docRef);
                             Alert.alert("Sucesso", "Registro de calorias deletado.");
@@ -175,7 +172,7 @@ export default function CalorieProgressChart() {
     const renderItem = ({ item }) => (
         <View style={styles.tableRow}>
             <Text style={styles.tableCell}>
-                {/* Adiciona 'T00:00:00' para garantir que new Date() não use o fuso horário atual incorretamente se for só data */}
+                {/*  t00:00:00 para garantir que o new Date() não use o fuso horário atual incorretamente se for só data */}
                 {format(new Date(item.data + 'T00:00:00'), "d 'de' MMMM", { locale: ptBR })}
             </Text>
             <Text style={styles.tableCell}>{item.kcal.toFixed(0)}</Text>
@@ -242,7 +239,6 @@ export default function CalorieProgressChart() {
 }
 
 const styles = StyleSheet.create({
-    // ... (Seus estilos originais)
     container: {
         flex: 1,
         padding: 20,

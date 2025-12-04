@@ -131,7 +131,7 @@ export default function AdicionarReceita({ navigation }) {
                     />
                 </View>
 
-                <Text style={styles.label}>Ingredientes (um por linha)</Text>
+                <Text style={styles.label}>Ingredientes </Text>
                 <TextInput
                     style={[styles.input, styles.textArea]}
                     placeholder="Ex:&#10;- 200g de peito de frango&#10;- 150g de batata doce&#10;- Temperos a gosto"
@@ -143,7 +143,6 @@ export default function AdicionarReceita({ navigation }) {
                 <Text style={styles.label}>Modo de Preparo</Text>
                 <TextInput
                     style={[styles.input, styles.textArea]}
-                    placeholder="Ex:&#10;1. Cozinhe o frango.&#10;2. Asse a batata doce..."
                     value={preparo}
                     onChangeText={setPreparo}
                     multiline

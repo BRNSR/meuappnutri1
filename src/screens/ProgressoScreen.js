@@ -13,13 +13,13 @@ export default function ProgressoScreen() {
             contentContainerStyle={styles.container}
         >
             
-            {/* ⬆️ NOVO: Seção de Consumo de Calorias (AGORA É O PRIMEIRO) */}
+            {/* progresso de kcal*/}
             <View style={styles.chartCard}>
                 <Text style={styles.cardTitle}>Consumo Calórico Diário</Text>
                 <CalorieProgressChart />
             </View>
             
-            {/* ⬇️ NOVO: Seção de Progresso de Peso (AGORA É O SEGUNDO) */}
+            {/* progresso de peso */}
             <View style={styles.chartCard}>
                 <Text style={styles.cardTitle}>Progresso de Peso</Text>
                 <WeightProgressChart />
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
         paddingBottom: 80, 
     },
     
-    // Estilos para o Card do Gráfico (mantidos)
+    // card do grafico
     chartCard: {
         backgroundColor: '#fff',
         borderRadius: 16, 
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#4CAF50', // Destaque na cor primária
+        color: '#4CAF50', 
         marginBottom: 10,
         alignSelf: 'flex-start',
         borderBottomWidth: StyleSheet.hairlineWidth,

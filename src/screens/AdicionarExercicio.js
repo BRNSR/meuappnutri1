@@ -1,4 +1,3 @@
-// AdicionarExercicio.js (CÓDIGO FINAL E LIMPO)
 
 import React, { useState, useMemo } from 'react'; 
 import {
@@ -15,14 +14,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getAuth } from 'firebase/auth'; 
-// Não precisa mais de Ionicons neste arquivo, mas deixarei o import.
-// import Ionicons from 'react-native-vector-icons/Ionicons'; 
 
-import { saveExercicio } from '../services/firestoreService'; 
+import { saveExercicio, updateExercicio } from '../services/firestoreService'; // update dos exerc
 
-// Lista de dias da semana (Curto: para salvar no Firestore)
 const DIAS_DA_SEMANA_CURTO = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-// Mapa de tradução (Curto para Completo: para exibição)
 const DIAS_COMPLETO_MAP = {
     'Dom': 'Domingo', 'Seg': 'Segunda-feira', 'Ter': 'Terça-feira', 
     'Qua': 'Quarta-feira', 'Qui': 'Quinta-feira', 'Sex': 'Sexta-feira', 
@@ -32,15 +27,22 @@ const DIAS_COMPLETO_MAP = {
 export default function AdicionarExercicio({ route, navigation }) {
     const insets = useSafeAreaInsets();
     
-    const { diaSelecionadoCurto } = route.params || { diaSelecionadoCurto: DIAS_DA_SEMANA_CURTO[1] }; 
+    // parte dos paramatros
+    const { diaSelecionadoCurto, exercicioParaEditar } = route.params || {}; // Recebe o objeto de edição
+    
+    // id do modo
+    const isEditing = !!exercicioParaEditar;
+    const diaInicialCurto = diaSelecionadoCurto || DIAS_DA_SEMANA_CURTO[1];
 
-    // ✅ Uso correto do useMemo para obter o nome completo sem recálculo
-    const diaCompleto = useMemo(() => DIAS_COMPLETO_MAP[diaSelecionadoCurto] || 'Dia Indefinido', [diaSelecionadoCurto]);
+    const diaCompleto = useMemo(() => DIAS_COMPLETO_MAP[diaInicialCurto] || 'Dia Indefinido', [diaInicialCurto]);
 
-    const [nome, setNome] = useState('');
-    const [series, setSeries] = useState('');
-    const [repeticoes, setRepeticoes] = useState('');
-    const [kg, setKg] = useState('');
+    // estados iniciais
+    const [nome, setNome] = useState(exercicioParaEditar?.nome || '');
+    const [series, setSeries] = useState(exercicioParaEditar?.series?.toString() || '');
+    const [repeticoes, setRepeticoes] = useState(exercicioParaEditar?.repeticoes?.toString() || '');
+    // Converte kg para string formatada com vírgula para exibir no input. usa toFixed(1) para garantir uma casa decimal.
+    const [kg, setKg] = useState(exercicioParaEditar?.kg ? exercicioParaEditar.kg.toFixed(1).replace('.', ',') : ''); 
+    
     const [loading, setLoading] = useState(false);
     
     const auth = getAuth();
@@ -48,7 +50,7 @@ export default function AdicionarExercicio({ route, navigation }) {
 
     const handleSalvarExercicio = async () => {
         if (!userId) {
-            Alert.alert("Erro de Autenticação", "Usuário não logado. Faça login para adicionar exercícios.");
+            Alert.alert("Erro de Autenticação", "Usuário não logado. Faça login para continuar.");
             return;
         }
 
@@ -59,6 +61,7 @@ export default function AdicionarExercicio({ route, navigation }) {
 
         const parsedSeries = parseInt(series);
         const parsedRepeticoes = parseInt(repeticoes);
+        // Troca vírgula por ponto para o parseFloat funcionar
         const parsedKg = parseFloat((kg || '0').replace(',', '.')); 
 
         if (isNaN(parsedSeries) || isNaN(parsedRepeticoes) || isNaN(parsedKg)) {
@@ -68,8 +71,8 @@ export default function AdicionarExercicio({ route, navigation }) {
         
         setLoading(true);
 
-        const novoExercicioData = {
-            day: diaSelecionadoCurto, 
+        const exercicioData = {
+            day: diaInicialCurto, 
             nome,
             series: parsedSeries,
             repeticoes: parsedRepeticoes,
@@ -77,14 +80,23 @@ export default function AdicionarExercicio({ route, navigation }) {
         };
 
         try {
-            await saveExercicio(userId, novoExercicioData); 
+            if (isEditing) {
+                
+                const exercicioId = exercicioParaEditar.id;
+                await updateExercicio(userId, exercicioId, exercicioData); 
+                Alert.alert("Sucesso", `"${nome}" atualizado!`);
+            } else {
+                
+                await saveExercicio(userId, exercicioData); 
+                Alert.alert("Sucesso", `"${nome}" adicionado!`);
+            }
 
             setLoading(false);
             navigation.goBack(); 
         } catch (error) {
             setLoading(false);
-            Alert.alert("Erro", "Não foi possível salvar o exercício no Firebase.");
-            console.error("Erro ao salvar exercício:", error);
+            Alert.alert("Erro", `Não foi possível ${isEditing ? 'atualizar' : 'salvar'} o exercício.`);
+            console.error(`Erro ao ${isEditing ? 'atualizar' : 'salvar'} exercício:`, error);
         }
     };
 
@@ -95,8 +107,10 @@ export default function AdicionarExercicio({ route, navigation }) {
         >
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
                 
-                {/* TÍTULO CORRETO / Dia do treino */}
-                <Text style={styles.title}> {diaCompleto}</Text>
+                
+                <Text style={styles.title}>
+                    {isEditing ? 'Editar Exercício' : 'Adicionar Exercício'} de {diaCompleto}
+                </Text>
                 
                 <Text style={styles.label}>Nome do Exercício</Text>
                 <TextInput
@@ -129,7 +143,7 @@ export default function AdicionarExercicio({ route, navigation }) {
                 <Text style={styles.label}>Carga (Kg)</Text>
                 <TextInput
                     style={styles.input}
-                    placeholder="Ex: 40.5 (opcional, use 0 se não tiver peso)"
+                    placeholder="Ex: (40)"
                     keyboardType="numeric"
                     value={kg}
                     onChangeText={setKg}
@@ -143,7 +157,10 @@ export default function AdicionarExercicio({ route, navigation }) {
                     {loading ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
-                        <Text style={styles.saveButtonText}>Salvar Exercício</Text>
+                        
+                        <Text style={styles.saveButtonText}>
+                            {isEditing ? 'Atualizar Exercício' : 'Salvar Exercício'}
+                        </Text>
                     )}
                 </TouchableOpacity>
             </ScrollView>

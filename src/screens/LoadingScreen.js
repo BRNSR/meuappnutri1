@@ -14,10 +14,10 @@ export default function LoadingScreen({ navigation }) {
                     const docRef = doc(db, 'users', user.uid, 'profile', 'data');
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
-                        // Navega para as abas principais se o usuário tiver perfil
+                        // aqui navega para as abas principais se o usuário ja tiver perfil
                         navigation.replace('MainTabs');
                     } else {
-                        // Navega para o fluxo de cadastro de perfil se não tiver
+                        // navega para o fluxo de cadastro de perfil se não tiver
                         navigation.replace('AuthStack');
                     }
                 } catch (e) {
@@ -25,13 +25,13 @@ export default function LoadingScreen({ navigation }) {
                     navigation.replace('AuthStack');
                 }
             } else {
-                // Navega para o fluxo de autenticação se não houver usuário logado
+                // navega para o fluxo de autenticacao se não houver usuário logado
                 navigation.replace('AuthStack');
             }
         };
 
         const unsubscribe = onAuthStateChanged(auth, checkAuthAndProfile);
-        return unsubscribe; // Limpa o listener
+        return unsubscribe; // limpa o listener
     }, [navigation]);
 
     return (

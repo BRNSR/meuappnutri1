@@ -497,8 +497,17 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
   },
-  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-  modalLabel: { fontSize: 14, fontWeight: 'bold', color: '#555', marginTop: 10 },
+  modalTitle: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    marginBottom: 10 
+  },
+  modalLabel: { 
+    fontSize: 14, 
+    fontWeight: 'bold', 
+    color: '#555', 
+    marginTop: 10 
+  },
   modalInput: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -508,9 +517,9 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
   flexDirection: "row",
-  justifyContent: "space-between", // Mudei de 'flex-end' para 'space-between'
+  justifyContent: "space-between", //  'flex-end' p 'space-between'
   width: '100%', // Garanta que a view ocupe toda a largura
-  marginTop: 20, // Opcional: Adiciona um espaçamento acima dos botões
+  marginTop: 20, // Adiciona um espaçamento acima dos botões
 },
   button: {
     paddingVertical: 10,

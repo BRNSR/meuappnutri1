@@ -1,4 +1,3 @@
-// src/screens/ProfileDataScreen.js
 import { auth } from "../services/firebaseConfig";
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
@@ -15,7 +14,7 @@ export default function ProfileDataScreen({ route, navigation, setHasProfile }) 
             return;
         }
 
-        // Validação adicional para garantir que os valores são numéricos
+        // garantir que os valores são numéricos
         if (isNaN(parseFloat(altura)) || isNaN(parseFloat(peso)) || isNaN(parseInt(idade))) {
             Alert.alert("Erro", "Por favor, insira valores numéricos válidos.");
             return;
@@ -74,7 +73,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#ffffffff'   // 👈 fundo branco
+        backgroundColor: '#ffffffff'
     },
 
 });

@@ -41,7 +41,7 @@ export default function ObjetivoScreen({ route, navigation }) {
         const idadeInt = parseInt(idade);
         const alturaCm = parseFloat(altura);
 
-        // Validação de meta de peso
+        // validação de meta de peso
         if (objetivo === 'perder_peso' && metaPesoKg >= pesoKg) {
             Alert.alert("Erro", "Para perder peso, sua meta deve ser menor que o peso atual.");
             return;
@@ -60,7 +60,7 @@ export default function ObjetivoScreen({ route, navigation }) {
                 return;
             }
 
-            // Usando a fórmula de Mifflin-St Jeor para TMB
+            // fórmula do Mifflin-St Jeor para TMB
             let tmb;
             if (sexo === 'masculino') {
                 tmb = (10 * pesoKg) + (6.25 * alturaCm) - (5 * idadeInt) + 5;
@@ -71,7 +71,7 @@ export default function ObjetivoScreen({ route, navigation }) {
             const gcd = tmb * atividadeMultiplicadores[nivelAtividade];
             let metaCalorica = gcd;
 
-            // Ajuste da meta calórica com base na meta semanal
+            // ajuste da meta calórica com base na meta semanal
             const caloriasPorKg = 7700;
             const metaCaloriasSemanal = parseFloat(metaSemanal) * caloriasPorKg;
             const ajusteDiario = metaCaloriasSemanal / 7;
@@ -82,7 +82,7 @@ export default function ObjetivoScreen({ route, navigation }) {
                 metaCalorica = gcd + ajusteDiario;
             }
 
-            // Limites de segurança para a meta calórica
+            // limite max para as kcal
             const faixaMinima = 1200; // Mulheres
             const faixaMinimaHomens = 1500; // Homens
             const limiteMaximo = 4000;
@@ -205,7 +205,7 @@ container: {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#ffffffff'   // 👈 fundo branco
+        backgroundColor: '#ffffffff'   
     },
 
 

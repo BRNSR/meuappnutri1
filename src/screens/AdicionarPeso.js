@@ -1,4 +1,3 @@
-// AdicionarPeso.js (Nome da tela: AddWeightScreen)
 
 import React, { useState } from 'react';
 import {
@@ -10,12 +9,12 @@ import {
     Alert,
     ActivityIndicator,
 } from 'react-native';
-// ❌ REMOVIDO: doc, updateDoc, collection, addDoc
-import { doc, getDoc } from 'firebase/firestore'; // Mantemos getDoc para a leitura única do perfil
+// rEMOVIDO: doc, updateDoc, collection, addDoc
+import { doc, getDoc } from 'firebase/firestore'; 
 import { auth, db } from '../services/firebaseConfig';
 import { format } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
-// ✅ IMPORTAÇÕES DO SERVIÇO: Usamos as funções modulares
+// funções modulares
 import { saveProfile, addWeightEntry } from '../services/firestoreService'; 
 
 
@@ -134,7 +133,6 @@ export default function AddWeightScreen({ navigation }) {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Registrar Peso</Text>
-
             <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowDatePicker(true)}>
                 <Text style={styles.datePickerButtonText}>Data: {format(date, 'dd/MM/yyyy')}</Text>
             </TouchableOpacity>
@@ -172,7 +170,7 @@ export default function AddWeightScreen({ navigation }) {
     );
 }
 
-// ... Styles permanecem os mesmos ...
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,

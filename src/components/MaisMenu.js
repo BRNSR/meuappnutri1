@@ -1,4 +1,3 @@
-// src/components/MaisMenu.js
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, Alert } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -14,7 +13,7 @@ export default function MaisMenu({ navigation }) {
         setModalVisible(false);
         try {
             await signOut(auth);
-            // ✅ A navegação que funciona com a sua estrutura atual
+
             navigation.replace('Login');
         } catch (error) {
             console.error("Erro ao fazer logout:", error);

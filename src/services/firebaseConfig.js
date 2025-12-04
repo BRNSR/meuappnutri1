@@ -1,4 +1,3 @@
-// src/services/firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -17,5 +16,4 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ✅ CORREÇÃO: Exportando 'app', 'auth' e 'db'
 export { app, auth, db };

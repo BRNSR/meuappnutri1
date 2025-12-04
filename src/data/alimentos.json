@@ -43,7 +43,6 @@
   "Ervilha": { "kcal": 81, "prot": 5.4, "carb": 14.5, "gord": 0.4 },
   "Feijão Branco": { "kcal": 139, "prot": 9.4, "carb": 25, "gord": 0.6 },
   "Amendoim": { "kcal": 567, "prot": 25.8, "carb": 16.1, "gord": 49.2 },
-
   "Leite de Amêndoas": { "kcal": 15, "prot": 0.6, "carb": 1.6, "gord": 1.1 },
   "Leite de Coco": { "kcal": 197, "prot": 2.3, "carb": 3.2, "gord": 21 },
   "Biscoito de Arroz": { "kcal": 387, "prot": 7.4, "carb": 84, "gord": 2.3 },
@@ -54,7 +53,6 @@
   "Ricota": { "kcal": 174, "prot": 11, "carb": 3, "gord": 13 },
   "Requeijão Light": { "kcal": 130, "prot": 8, "carb": 4, "gord": 9 },
   "Azeitona": { "kcal": 115, "prot": 0.8, "carb": 6.3, "gord": 10.7 },
-
   "Manteiga de Amendoim": { "kcal": 588, "prot": 25, "carb": 20, "gord": 50 },
   "Mel": { "kcal": 304, "prot": 0.3, "carb": 82, "gord": 0 },
   "Chocolate Amargo (70%)": { "kcal": 546, "prot": 7.8, "carb": 46, "gord": 43 },
