@@ -1,4 +1,3 @@
-// ProgressoKcal.js
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator, Alert, TouchableOpacity, FlatList } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';

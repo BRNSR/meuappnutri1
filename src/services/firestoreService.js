@@ -5,7 +5,7 @@ import {
     addDoc, 
     setDoc, 
     deleteDoc, 
-    updateDoc, // 🌟 Adicionado para edição
+    updateDoc, 
     query, 
     where, 
     orderBy, 

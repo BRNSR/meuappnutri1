@@ -19,12 +19,14 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-
+//chaves para o asyncstorage
 const RECENTES_KEY = '@alimentos_recentes';
 const FAVORITOS_KEY = '@alimentos_favoritos';
 const CUSTOM_FOODS_KEY = '@alimentos_custom';
 
+
 export default function BuscaAlimento({ route, navigation }) {
+  //controle da screen
   const { refeicaoId, adicionarAlimento } = route.params;
   const [busca, setBusca] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
@@ -36,18 +38,21 @@ export default function BuscaAlimento({ route, navigation }) {
   const [customFoods, setCustomFoods] = useState({});
   const [newFoodModalVisible, setNewFoodModalVisible] = useState(false);
 
+  //parte de criar novo alimento
   const [newFoodName, setNewFoodName] = useState('');
   const [newFoodKcal, setNewFoodKcal] = useState('');
   const [newFoodProt, setNewFoodProt] = useState('');
   const [newFoodCarb, setNewFoodCarb] = useState('');
   const [newFoodGord, setNewFoodGord] = useState('');
 
+  //utilizando o hook do react native
   useEffect(() => {
     loadData();
   }, []);
-
+  // carrega dados do async
   const loadData = async () => {
     try {
+      //faz a leitura (recent, fav e custom)
       const recentesData = await AsyncStorage.getItem(RECENTES_KEY);
       const favoritosData = await AsyncStorage.getItem(FAVORITOS_KEY);
       const customFoodsData = await AsyncStorage.getItem(CUSTOM_FOODS_KEY);
@@ -62,6 +67,7 @@ export default function BuscaAlimento({ route, navigation }) {
 
   const saveRecente = async (alimento) => {
     try {
+      //alimentos recentes para ficar no topo e remove duplicados
       const novaLista = [alimento, ...recentes.filter(item => item !== alimento)];
       const limitedList = novaLista.slice(0, 10);
       setRecentes(limitedList);
@@ -75,8 +81,10 @@ export default function BuscaAlimento({ route, navigation }) {
     try {
       let novaLista;
       if (favoritos.includes(alimento)) {
+        //remove o fav se ja existir
         novaLista = favoritos.filter(item => item !== alimento);
       } else {
+        //add no final se nao existir
         novaLista = [...favoritos, alimento];
       }
       setFavoritos(novaLista);
@@ -85,7 +93,7 @@ export default function BuscaAlimento({ route, navigation }) {
       console.error("Erro ao salvar favorito:", error);
     }
   };
-
+  //parte de remoção do alimento
   const handleDelete = async (alimento) => {
     Alert.alert(
       "Confirmar Exclusão",
@@ -97,6 +105,7 @@ export default function BuscaAlimento({ route, navigation }) {
         },
         {
           text: "Remover",
+          // ação para confirmar remoção
           onPress: async () => {
             const updatedFavoritos = favoritos.filter(item => item !== alimento);
             setFavoritos(updatedFavoritos);
@@ -117,7 +126,9 @@ export default function BuscaAlimento({ route, navigation }) {
   };
 
   const addNewFood = async () => {
+    //validar nome
     const isNameValid = newFoodName.trim() !== '';
+    //e validar macros
     const areMacrosValid = [newFoodKcal, newFoodProt, newFoodCarb, newFoodGord].every(
       (value) => !isNaN(parseFloat(value)) && parseFloat(value) >= 0
     );
@@ -136,8 +147,10 @@ export default function BuscaAlimento({ route, navigation }) {
       }
     };
 
+    //mesclar alimentos ja existentes 
     const updatedCustomFoods = { ...customFoods, ...newFood };
     setCustomFoods(updatedCustomFoods);
+    //atualiza e salva no async
     await AsyncStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify(updatedCustomFoods));
     
     setNewFoodName('');
@@ -150,6 +163,7 @@ export default function BuscaAlimento({ route, navigation }) {
     Alert.alert("Sucesso", `"${newFoodName}" adicionado(a) com sucesso!`);
   };
 
+  //add alimento
   const confirmarAdicao = () => {
     const numericGramas = parseFloat(gramas);
     if (isNaN(numericGramas) || numericGramas <= 0) {
@@ -159,7 +173,7 @@ export default function BuscaAlimento({ route, navigation }) {
       );
       return;
     }
-
+    //proporção alimento 100g
     const combinedTabela = { ...tabelaAlimentos, ...customFoods };
     const infoBase = combinedTabela[alimentoSelecionado];
     const fator = numericGramas / 100;
@@ -172,7 +186,7 @@ export default function BuscaAlimento({ route, navigation }) {
       carb: parseFloat((infoBase.carb * fator).toFixed(1)),
       gord: parseFloat((infoBase.gord * fator).toFixed(1)),
     };
-
+    //salva alimento na ref
     adicionarAlimento(refeicaoId, alimentoComGramas);
     saveRecente(alimentoSelecionado);
     setGramas("");
@@ -180,6 +194,7 @@ export default function BuscaAlimento({ route, navigation }) {
     navigation.goBack();
   };
 
+  //botao do swipe para excluir
   const renderRightActions = (item) => {
     return (
       <TouchableOpacity
@@ -192,6 +207,7 @@ export default function BuscaAlimento({ route, navigation }) {
     );
   };
 
+  //renderiza os alimentos da lista
   const renderItem = ({ item }) => {
     const combinedTabela = { ...tabelaAlimentos, ...customFoods };
     const info = combinedTabela[item];
@@ -203,12 +219,14 @@ export default function BuscaAlimento({ route, navigation }) {
     return (
       <Swipeable
         renderRightActions={isDeletable ? () => renderRightActions(item) : null}
+        //distancia do swipe
         rightThreshold={40}
       >
         <View style={styles.itemContainer}>
           <TouchableOpacity
             style={styles.item}
             onPress={() => {
+              //seleciona o alimento e/ abre o modal
               setAlimentoSelecionado(item);
               setModalVisible(true);
             }}
@@ -231,6 +249,7 @@ export default function BuscaAlimento({ route, navigation }) {
     );
   };
 
+  //função para filtrar a lista buscar recentes fav 
   const getFilteredData = () => {
     const combinedKeys = [...new Set([...Object.keys(tabelaAlimentos), ...Object.keys(customFoods)])];
     
@@ -245,8 +264,11 @@ export default function BuscaAlimento({ route, navigation }) {
     );
   };
 
+  //função para retornar a lista filtrada
+  //resultado no flatlist
   const filteredData = getFilteredData();
 
+  //retorna para tela principal
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
@@ -286,6 +308,7 @@ export default function BuscaAlimento({ route, navigation }) {
           />
         )}
 
+        {/*lista de alimento flatlist */}
         <FlatList
           data={filteredData}
           keyExtractor={(item) => item}
@@ -297,6 +320,7 @@ export default function BuscaAlimento({ route, navigation }) {
           }
         />
         
+        {/* botao flutuante do + adicionar alimento */}
         <TouchableOpacity
           style={styles.floatingButton}
           onPress={() => setNewFoodModalVisible(true)}
@@ -305,6 +329,7 @@ export default function BuscaAlimento({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
+          {/* modal para adicionar alimento */}
       <Modal transparent={true} visible={modalVisible} animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -393,6 +418,8 @@ export default function BuscaAlimento({ route, navigation }) {
                 >
                   <Text style={styles.buttonText}>Cancelar</Text>
                 </Pressable>
+
+                 {/* Adicionar alimento */}
                 <Pressable
                   style={[styles.button, styles.confirm]}
                   onPress={addNewFood}
@@ -469,6 +496,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#888',
   },
+  
   floatingButton: {
     position: 'absolute',
     bottom: 30,
